@@ -41,16 +41,24 @@ export default function CheckoutPage() {
   const isLoading = isUserLoading || isCartLoading;
 
   useEffect(() => {
-    if (isLoading) return;
+    if (isLoading) return; // Wait until loading states are resolved
 
+    // If user is not logged in after loading, redirect to login
     if (!user) {
       router.replace('/login?redirect=/checkout');
-    } else if (cartItems.length === 0) {
-      router.replace('/cart');
-    } else {
-        form.setValue('name', user.name || '');
-        form.setValue('email', user.email);
+      return; // Stop further execution in this render
     }
+    
+    // If cart is empty after loading, redirect to cart page
+    if (cartItems.length === 0) {
+      router.replace('/cart');
+      return; // Stop further execution
+    }
+    
+    // If user is logged in and cart is not empty, populate the form
+    form.setValue('name', user.name || '');
+    form.setValue('email', user.email);
+
   }, [cartItems.length, router, user, form, isLoading]);
 
   const onSubmit = (data: CheckoutFormValues) => {
@@ -113,7 +121,7 @@ export default function CheckoutPage() {
     )
   }
 
-  // This check is to prevent flash of content before redirect happens
+  // This check is to prevent a flash of content before redirect happens
   if (!user || cartItems.length === 0) {
     return null;
   }

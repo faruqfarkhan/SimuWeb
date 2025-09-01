@@ -28,9 +28,10 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { toast } = useToast();
   const { user, isLoading: isUserLoading } = useUser();
 
-  const fetchDbCart = useCallback(async (userId: number) => {
+  const fetchDbCart = useCallback(async (userId: number): Promise<CartItem[]> => {
     if (!db) return [];
     try {
+      // Joining with products to get all details, as cart_items only stores IDs.
       const result = await db.execute({
         sql: `
           SELECT p.id, p.name, p.price, p.description, p.longDescription, p.image, p.dataAiHint, ci.quantity
@@ -60,6 +61,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [toast]);
   
+  // This function handles migrating a guest's cart to their account upon login.
   const migrateGuestCartToDb = async (userId: number) => {
     try {
       const guestCartJson = localStorage.getItem(GUEST_CART_KEY);
@@ -68,13 +70,14 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const guestCart: CartItem[] = JSON.parse(guestCartJson);
       if (guestCart.length === 0 || !db) return;
 
+      // Use INSERT ... ON CONFLICT to merge quantities if the item already exists in the DB cart
       const statements = guestCart.map(item => ({
         sql: 'INSERT INTO cart_items (user_id, product_id, quantity) VALUES (?, ?, ?) ON CONFLICT(user_id, product_id) DO UPDATE SET quantity = cart_items.quantity + excluded.quantity',
         args: [userId, item.product.id, item.quantity],
       }));
 
       await db.batch(statements, 'write');
-      localStorage.removeItem(GUEST_CART_KEY);
+      localStorage.removeItem(GUEST_CART_KEY); // Clear the guest cart after migration
     } catch (error) {
       console.error("Failed to migrate guest cart:", error);
     }
@@ -82,15 +85,18 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 
   useEffect(() => {
+    // This effect runs whenever the user's login status changes.
     if (isUserLoading) return;
 
     const loadCart = async () => {
       setIsLoading(true);
       if (user) {
+        // User is logged in
         await migrateGuestCartToDb(user.id);
         const dbCart = await fetchDbCart(user.id);
         setCartItems(dbCart);
       } else {
+        // User is a guest
         const guestCartJson = localStorage.getItem(GUEST_CART_KEY);
         setCartItems(guestCartJson ? JSON.parse(guestCartJson) : []);
       }
@@ -102,11 +108,13 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const addToCart = useCallback(async (product: Product, quantity = 1) => {
     if (user && db) {
+      // Logged-in user: update database
       try {
         await db.execute({
           sql: 'INSERT INTO cart_items (user_id, product_id, quantity) VALUES (?, ?, ?) ON CONFLICT(user_id, product_id) DO UPDATE SET quantity = cart_items.quantity + ?',
           args: [user.id, product.id, quantity, quantity],
         });
+        // Fetch the entire cart again to ensure consistency
         const updatedCart = await fetchDbCart(user.id);
         setCartItems(updatedCart);
       } catch (error) {
@@ -115,6 +123,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
     } else {
+      // Guest user: update localStorage
       setCartItems(prevItems => {
         const existingItem = prevItems.find(item => item.product.id === product.id);
         let newItems;

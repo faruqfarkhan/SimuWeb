@@ -24,8 +24,9 @@ export async function seedProducts() {
   
   try {
     const { rows } = await db.execute("SELECT COUNT(*) as count FROM products");
-    // This check is tricky with Turso's result format. Let's adjust.
-    const count = (rows[0] as any).count;
+    
+    // Turso returns count differently based on context, so handle both potential structures.
+    const count = rows.length > 0 ? (rows[0] as any).count ?? (rows[0][0] as any) : 0;
 
     if (count > 0) {
       // console.log("Products table already seeded.");

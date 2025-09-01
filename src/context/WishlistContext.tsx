@@ -54,6 +54,7 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const guestWishlist: Product[] = JSON.parse(guestWishlistJson);
       if (guestWishlist.length === 0 || !db) return;
 
+      // Use INSERT ... ON CONFLICT DO NOTHING to avoid duplicates.
       const statements = guestWishlist.map(item => ({
         sql: 'INSERT INTO wishlist_items (user_id, product_id) VALUES (?, ?) ON CONFLICT DO NOTHING',
         args: [userId, item.id],
@@ -87,11 +88,13 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
 
   const addToWishlist = useCallback(async (product: Product) => {
+    // Prevent adding duplicates on the client-side first
     const isAlreadyInWishlist = wishlistItems.some(item => item.id === product.id);
     if (isAlreadyInWishlist) return;
 
     if (user && db) {
         try {
+            // The DB also has a constraint to prevent duplicates
             await db.execute({
                 sql: 'INSERT INTO wishlist_items (user_id, product_id) VALUES (?, ?) ON CONFLICT DO NOTHING',
                 args: [user.id, product.id],
@@ -103,6 +106,7 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             return;
         }
     } else {
+      // Guest user: update localStorage
       setWishlistItems(prevItems => {
         const newItems = [...prevItems, product];
         localStorage.setItem(GUEST_WISHLIST_KEY, JSON.stringify(newItems));
@@ -130,6 +134,7 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             return;
         }
     } else {
+        // Guest user: update localStorage
         setWishlistItems(prevItems => {
             const newItems = prevItems.filter(item => item.id !== productId);
             localStorage.setItem(GUEST_WISHLIST_KEY, JSON.stringify(newItems));

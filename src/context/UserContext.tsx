@@ -24,7 +24,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     // This effect now only handles initialization state, not user loading.
-    // User loading happens on login.
+    // User loading happens on login or page load if a session exists.
+    // For this app, we don't have session persistence, so login is explicit.
     setIsLoading(false);
   }, []);
 
@@ -53,7 +54,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         currentUser = userResult.rows[0] as unknown as User;
       } else {
         // User does not exist, create them
-        const name = email.split('@')[0];
+        const name = email.split('@')[0]; // Simple name generation
         const insertResult = await db.execute({
           sql: 'INSERT INTO users (email, name) VALUES (?, ?) RETURNING id, email, name',
           args: [email, name],
@@ -89,6 +90,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         title: "Logout Berhasil",
         description: "Anda telah berhasil keluar.",
     });
+    // If on a user-only page, redirect to home.
     if (pathname === '/checkout' || pathname === '/wishlist') {
       router.push('/');
     }
