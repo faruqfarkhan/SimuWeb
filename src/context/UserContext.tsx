@@ -5,9 +5,6 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import type { User } from '@/lib/types';
 import { db } from '@/lib/db';
-import { config } from 'dotenv';
-
-config();
 
 interface RegisterData {
     name: string;
@@ -32,6 +29,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { toast } = useToast();
 
   useEffect(() => {
+    // This effect is just to remove the initial loading state.
+    // In a real app with sessions, you'd verify the session here.
     setIsLoading(false);
   }, []);
 
@@ -47,7 +46,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     setIsLoading(true);
     try {
-      let userResult = await db.execute({
+      const userResult = await db.execute({
         sql: 'SELECT id, email, name FROM users WHERE email = ?',
         args: [email],
       });
@@ -61,7 +60,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
         return currentUser;
       } else {
-        return null;
+        return null; // User not found
       }
     } catch (error) {
       console.error("Login failed:", error);
@@ -83,25 +82,28 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     setIsLoading(true);
     try {
+      // 1. Check if user already exists
       const existingUserResult = await db.execute({
         sql: 'SELECT id FROM users WHERE email = ?',
         args: [data.email],
       });
 
       if (existingUserResult.rows.length > 0) {
-        return null;
+        return null; // Indicates user already exists
       }
 
+      // 2. Create the new user
       await db.execute({
         sql: 'INSERT INTO users (email, name) VALUES (?, ?)',
         args: [data.email, data.name],
       });
 
+      // 3. Retrieve the newly created user to get their ID
       const newUserResult = await db.execute({
         sql: 'SELECT id, email, name FROM users WHERE email = ?',
         args: [data.email],
       });
-
+      
       if (newUserResult.rows.length === 0) {
         throw new Error("Failed to retrieve user after creation.");
       }
@@ -131,6 +133,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         title: "Logout Berhasil",
         description: "Anda telah berhasil keluar.",
     });
+    // If the user is on a protected page, redirect them.
     if (pathname === '/checkout' || pathname === '/wishlist') {
       router.push('/');
     }
