@@ -107,22 +107,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [user, isUserLoading, fetchDbCart]);
 
   const addToCart = useCallback(async (product: Product, quantity = 1) => {
-    if (user && db) {
-      // Logged-in user: update database
-      try {
-        await db.execute({
-          sql: 'INSERT INTO cart_items (user_id, product_id, quantity) VALUES (?, ?, ?) ON CONFLICT(user_id, product_id) DO UPDATE SET quantity = cart_items.quantity + ?',
-          args: [user.id, product.id, quantity, quantity],
-        });
-        // Fetch the entire cart again to ensure consistency
-        const updatedCart = await fetchDbCart(user.id);
-        setCartItems(updatedCart);
-      } catch (error) {
-        console.error("Failed to add to DB cart:", error);
-        toast({ variant: 'destructive', title: "Error", description: "Could not add item to cart." });
-        return;
-      }
-    } else {
+    if (!user) {
       // Guest user: update localStorage
       setCartItems(prevItems => {
         const existingItem = prevItems.find(item => item.product.id === product.id);
@@ -139,7 +124,23 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         localStorage.setItem(GUEST_CART_KEY, JSON.stringify(newItems));
         return newItems;
       });
+    } else if (db) {
+       // Logged-in user: update database
+      try {
+        await db.execute({
+          sql: 'INSERT INTO cart_items (user_id, product_id, quantity) VALUES (?, ?, ?) ON CONFLICT(user_id, product_id) DO UPDATE SET quantity = cart_items.quantity + ?',
+          args: [user.id, product.id, quantity, quantity],
+        });
+        // Fetch the entire cart again to ensure consistency
+        const updatedCart = await fetchDbCart(user.id);
+        setCartItems(updatedCart);
+      } catch (error) {
+        console.error("Failed to add to DB cart:", error);
+        toast({ variant: 'destructive', title: "Error", description: "Could not add item to cart." });
+        return;
+      }
     }
+
     toast({
         title: "Ditambahkan ke Keranjang",
         description: `${product.name} telah ditambahkan ke keranjang Anda.`,
@@ -148,7 +149,18 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const removeFromCart = useCallback(async (productId: number) => {
     const productName = allProducts.find(p => p.id === productId)?.name || 'Item';
-    if (user && db) {
+    if (!user) {
+       // Guest user: update localStorage
+      setCartItems(prevItems => {
+        const newItems = prevItems.filter(item => item.product.id !== productId);
+        if (newItems.length > 0) {
+            localStorage.setItem(GUEST_CART_KEY, JSON.stringify(newItems));
+        } else {
+            localStorage.removeItem(GUEST_CART_KEY);
+        }
+        return newItems;
+      });
+    } else if (db) {
       try {
         await db.execute({
             sql: 'DELETE FROM cart_items WHERE user_id = ? AND product_id = ?',
@@ -160,12 +172,6 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         toast({ variant: 'destructive', title: "Error", description: "Could not remove item from cart." });
         return;
       }
-    } else {
-      setCartItems(prevItems => {
-        const newItems = prevItems.filter(item => item.product.id !== productId);
-        localStorage.setItem(GUEST_CART_KEY, JSON.stringify(newItems));
-        return newItems;
-      });
     }
     toast({
       title: "Item Dihapus",
@@ -178,7 +184,16 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       removeFromCart(productId);
       return;
     }
-    if (user && db) {
+    if (!user) {
+        // Guest user: update localStorage
+        setCartItems(prevItems => {
+            const newItems = prevItems.map(item =>
+            item.product.id === productId ? { ...item, quantity } : item
+            );
+            localStorage.setItem(GUEST_CART_KEY, JSON.stringify(newItems));
+            return newItems;
+        });
+    } else if (db) {
         try {
             await db.execute({
                 sql: 'UPDATE cart_items SET quantity = ? WHERE user_id = ? AND product_id = ?',
@@ -189,19 +204,15 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
              console.error("Failed to update DB cart:", error);
             toast({ variant: 'destructive', title: "Error", description: "Could not update item quantity." });
         }
-    } else {
-      setCartItems(prevItems => {
-        const newItems = prevItems.map(item =>
-          item.product.id === productId ? { ...item, quantity } : item
-        );
-        localStorage.setItem(GUEST_CART_KEY, JSON.stringify(newItems));
-        return newItems;
-      });
     }
   }, [user, toast, removeFromCart]);
 
   const clearCart = useCallback(async () => {
-    if (user && db) {
+    if (!user) {
+        // Guest user
+        setCartItems([]);
+        localStorage.removeItem(GUEST_CART_KEY);
+    } else if (db) {
       try {
         await db.execute({
           sql: 'DELETE FROM cart_items WHERE user_id = ?',
@@ -213,9 +224,6 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         toast({ variant: 'destructive', title: "Error", description: "Could not clear your cart." });
         return;
       }
-    } else {
-      setCartItems([]);
-      localStorage.removeItem(GUEST_CART_KEY);
     }
   }, [user, toast]);
 
