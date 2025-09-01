@@ -8,6 +8,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { CheckCircle2 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 
+declare global {
+  interface Window {
+    dataLayer: any[];
+  }
+}
+
 export default function ConfirmationPage() {
   const [orderId, setOrderId] = useState<string | null>(null);
   const [orderTotal, setOrderTotal] = useState<string | null>(null);
@@ -18,6 +24,21 @@ export default function ConfirmationPage() {
     if (total) {
       setOrderTotal(total);
       setOrderId(`SW-${Math.floor(Math.random() * 100000000)}`);
+
+      // Datalayer logic
+      window.dataLayer = window.dataLayer || [];
+      window.dataLayer.push({
+        event: 'purchase',
+        ecommerce: {
+          purchase: {
+            actionField: {
+              id: `SW-${Math.floor(Math.random() * 100000000)}`, // Transaction ID. Required for purchases.
+              revenue: total, // Total transaction value (including tax and shipping)
+            },
+          },
+        },
+      });
+
       // It's good practice to clean up localStorage after use
       localStorage.removeItem('simuweb_order_total');
     } else {

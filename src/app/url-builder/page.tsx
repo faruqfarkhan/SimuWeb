@@ -8,9 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Copy, Link2 } from 'lucide-react';
+import { Copy, Link2, Wand2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { Separator } from '@/components/ui/separator';
 
 const urlBuilderSchema = z.object({
   baseUrl: z.string().url({ message: 'Please enter a valid URL.' }),
@@ -22,6 +21,17 @@ const urlBuilderSchema = z.object({
 });
 
 type UrlBuilderFormValues = z.infer<typeof urlBuilderSchema>;
+
+const utmOptions = {
+    utm_source: ['google', 'facebook', 'newsletter'],
+    utm_medium: ['cpc', 'social', 'email'],
+    utm_campaign: ['summer_sale', 'new_product', 'promo_launch'],
+    utm_term: ['running_shoes', 'acoustic_guitar', 'free_trial'],
+    utm_content: ['logolink', 'textlink', 'banner_ad']
+};
+
+const getRandomOption = (options: string[]) => options[Math.floor(Math.random() * options.length)];
+
 
 export default function UrlBuilderPage() {
   const [generatedUrl, setGeneratedUrl] = useState('');
@@ -71,6 +81,18 @@ export default function UrlBuilderPage() {
     }
   };
 
+  const generateRandomParams = () => {
+    form.setValue('utm_source', getRandomOption(utmOptions.utm_source));
+    form.setValue('utm_medium', getRandomOption(utmOptions.utm_medium));
+    form.setValue('utm_campaign', getRandomOption(utmOptions.utm_campaign));
+    form.setValue('utm_term', getRandomOption(utmOptions.utm_term));
+    form.setValue('utm_content', getRandomOption(utmOptions.utm_content));
+    toast({
+        title: 'Random Parameters Generated!',
+        description: 'UTM parameters have been filled with random values.',
+    });
+  }
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       <div className="flex items-center space-x-4 mb-8">
@@ -90,7 +112,7 @@ export default function UrlBuilderPage() {
           <CardContent>
             <Form {...form}>
               <form className="space-y-4">
-                <FormField
+                 <FormField
                   control={form.control}
                   name="baseUrl"
                   render={({ field }) => (
@@ -103,6 +125,12 @@ export default function UrlBuilderPage() {
                     </FormItem>
                   )}
                 />
+
+                <Button type="button" variant="outline" onClick={generateRandomParams} className="w-full">
+                    <Wand2 className="mr-2 h-4 w-4" />
+                    Generate Random Params
+                </Button>
+
                 <FormField
                   control={form.control}
                   name="utm_source"
@@ -175,16 +203,16 @@ export default function UrlBuilderPage() {
                 </CardHeader>
                 <CardContent>
                     <div className="relative">
-                        <Input
+                        <Textarea
                             readOnly
                             value={generatedUrl}
                             placeholder="Your generated URL will appear here"
-                            className="pr-10 h-10 bg-muted/50"
+                            className="pr-10 h-32 bg-muted/50 resize-none"
                         />
                         <Button
                             variant="ghost"
                             size="icon"
-                            className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8"
+                            className="absolute right-1 top-1 h-8 w-8"
                             onClick={handleCopy}
                             disabled={!generatedUrl}
                         >
