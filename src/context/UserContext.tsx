@@ -32,8 +32,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { toast } = useToast();
 
   useEffect(() => {
-    // This effect now only sets the initial loading state.
-    // User state is determined by login/register actions.
     setIsLoading(false);
   }, []);
 
@@ -63,7 +61,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
         return currentUser;
       } else {
-        return null; // User not found
+        return null;
       }
     } catch (error) {
       console.error("Login failed:", error);
@@ -85,31 +83,26 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     setIsLoading(true);
     try {
-      // Step 1: Check if user already exists
       const existingUserResult = await db.execute({
         sql: 'SELECT id FROM users WHERE email = ?',
         args: [data.email],
       });
 
       if (existingUserResult.rows.length > 0) {
-        // User already exists, so registration fails.
         return null;
       }
 
-      // Step 2: User does not exist, so insert them.
       await db.execute({
         sql: 'INSERT INTO users (email, name) VALUES (?, ?)',
         args: [data.email, data.name],
       });
 
-      // Step 3: Fetch the newly created user to get their ID and confirm creation.
       const newUserResult = await db.execute({
         sql: 'SELECT id, email, name FROM users WHERE email = ?',
         args: [data.email],
       });
 
       if (newUserResult.rows.length === 0) {
-        // This case is unlikely but indicates an issue with the INSERT or subsequent SELECT.
         throw new Error("Failed to retrieve user after creation.");
       }
 
@@ -125,7 +118,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
     } catch (error) {
       console.error("Registration failed:", error);
-      return null; // Return null on any error to trigger the failure message in the form.
+      return null;
     } finally {
         setIsLoading(false);
     }
@@ -138,7 +131,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         title: "Logout Berhasil",
         description: "Anda telah berhasil keluar.",
     });
-    // If on a user-only page, redirect to home.
     if (pathname === '/checkout' || pathname === '/wishlist') {
       router.push('/');
     }
