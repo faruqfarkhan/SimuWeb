@@ -47,7 +47,6 @@ function ConfirmationContent() {
         quantity: item.quantity,
       }));
 
-      window.dataLayer.push({ ecommerce: null }); // Clear the previous ecommerce object
       window.dataLayer.push({
         event: 'purchase',
         ecommerce: {
