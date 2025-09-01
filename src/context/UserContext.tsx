@@ -32,6 +32,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { toast } = useToast();
 
   useEffect(() => {
+    // This effect now only sets the initial loading state.
+    // User state is determined by login/register actions.
     setIsLoading(false);
   }, []);
 
@@ -61,7 +63,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
         return currentUser;
       } else {
-        return null;
+        return null; // User not found
       }
     } catch (error) {
       console.error("Login failed:", error);
