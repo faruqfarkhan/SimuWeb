@@ -6,6 +6,8 @@ import { useToast } from '@/hooks/use-toast';
 import type { User } from '@/lib/types';
 import { db } from '@/lib/db';
 
+const USER_STORAGE_KEY = 'simuweb_user';
+
 interface RegisterData {
     name: string;
     email: string;
@@ -29,9 +31,19 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { toast } = useToast();
 
   useEffect(() => {
-    // This effect is just to remove the initial loading state.
-    // In a real app with sessions, you'd verify the session here.
-    setIsLoading(false);
+    // This effect runs on initial load to check for a persisted session.
+    try {
+      const storedUserJson = localStorage.getItem(USER_STORAGE_KEY);
+      if (storedUserJson) {
+        setUser(JSON.parse(storedUserJson));
+      }
+    } catch (error) {
+        console.error("Failed to parse user from localStorage", error);
+        // Clear broken data from storage
+        localStorage.removeItem(USER_STORAGE_KEY);
+    } finally {
+        setIsLoading(false);
+    }
   }, []);
 
   const login = useCallback(async (email: string): Promise<User | null> => {
@@ -54,6 +66,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (userResult.rows.length > 0) {
         const currentUser = userResult.rows[0] as unknown as User;
         setUser(currentUser);
+        localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(currentUser)); // Save to localStorage
         toast({
             title: "Login Berhasil",
             description: `Selamat datang kembali, ${currentUser.name || currentUser.email}!`,
@@ -110,6 +123,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const newUser = newUserResult.rows[0] as unknown as User;
       setUser(newUser);
+      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(newUser)); // Save to localStorage
       
       toast({
           title: "Pendaftaran Berhasil!",
@@ -129,6 +143,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = useCallback(() => {
     setUser(null);
+    localStorage.removeItem(USER_STORAGE_KEY); // Remove from localStorage
     toast({
         title: "Logout Berhasil",
         description: "Anda telah berhasil keluar.",
