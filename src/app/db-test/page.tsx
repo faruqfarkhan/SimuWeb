@@ -18,7 +18,8 @@ async function getDbStatus() {
     return {
       status: 'Koneksi & Query Berhasil!',
       error: null,
-      data: result.rows,
+      // Safely access rows, default to empty array if undefined.
+      data: result.rows ?? [],
     };
   } catch (e: any) {
     // If the query fails, it's likely a connection or authentication issue.
