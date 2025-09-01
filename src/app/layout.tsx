@@ -28,13 +28,6 @@ export default function RootLayout({
         <GoogleTagManager gtmId="GTM-WGFPF26Z" />
       </head>
       <body className={cn('min-h-screen bg-background font-body antialiased')}>
-        {/* Google Tag Manager - Noscript Fallback */}
-        <noscript
-          dangerouslySetInnerHTML={{
-            __html: `<iframe src="https://www.googletagmanager.com/ns.html?id=${"GTM-WGFPF26Z"}"
-            height="0" width="0" style="display:none;visibility:hidden"></iframe>`,
-          }}
-        />
         <UserProvider>
           <WishlistProvider>
             <CartProvider>
