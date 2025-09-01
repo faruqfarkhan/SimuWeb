@@ -1,3 +1,4 @@
+export const runtime = 'nodejs'; // Pastikan runtime Node.js digunakan
 
 import { db } from '@/lib/db';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';

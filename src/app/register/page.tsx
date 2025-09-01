@@ -1,3 +1,5 @@
+export const runtime = 'nodejs'; // Pastikan runtime Node.js digunakan
+
 'use client';
 
 import React, { Suspense } from 'react';

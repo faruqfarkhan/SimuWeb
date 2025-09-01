@@ -35,7 +35,7 @@ export async function seedProducts() {
     const results = await db.batch(statements, 'write');
     
     // Check if any rows were affected to give a meaningful log.
-    const rowsAffected = results.reduce((acc, result) => acc.rowsAffected + (result.rowsAffected || 0), { rowsAffected: 0 });
+    const rowsAffected = results.reduce((acc, result) => acc + (result.rowsAffected || 0), { rowsAffected: 0 });
     if (rowsAffected > 0) {
       console.log(`Successfully seeded ${rowsAffected} new products.`);
     } else {
@@ -51,7 +51,7 @@ export async function seedProducts() {
 
 // Call seed on module load. This might run multiple times during development
 // due to hot-reloading, but the ON CONFLICT clause prevents duplicates.
-seedProducts();
+// seedProducts(); // DISABLED TO PREVENT BUILD-TIME ERRORS
 
 
 export function getProducts({
@@ -106,3 +106,4 @@ export function getProducts({
     },
   };
 }
+
