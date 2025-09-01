@@ -83,30 +83,32 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     setIsLoading(true);
     try {
-      // Check if user already exists
+      // Step 1: Check if user already exists
       const existingUserResult = await db.execute({
         sql: 'SELECT id FROM users WHERE email = ?',
         args: [data.email],
       });
-      
+
       if (existingUserResult.rows.length > 0) {
-        return null; // User already exists
+        // User already exists, so registration fails.
+        return null;
       }
 
-      // Step 1: Insert the new user.
+      // Step 2: User does not exist, so insert them.
       await db.execute({
         sql: 'INSERT INTO users (email, name) VALUES (?, ?)',
         args: [data.email, data.name],
       });
-      
-      // Step 2: Fetch the user that was just created to get all their info.
+
+      // Step 3: Fetch the newly created user to get their ID and confirm creation.
       const newUserResult = await db.execute({
-          sql: 'SELECT id, email, name FROM users WHERE email = ?',
-          args: [data.email]
+        sql: 'SELECT id, email, name FROM users WHERE email = ?',
+        args: [data.email],
       });
 
-      if (newUserResult.rows.length === 0){
-          throw new Error("Failed to retrieve user after creation.");
+      if (newUserResult.rows.length === 0) {
+        // This case is unlikely but indicates an issue with the INSERT or subsequent SELECT.
+        throw new Error("Failed to retrieve user after creation.");
       }
 
       const newUser = newUserResult.rows[0] as unknown as User;
@@ -121,7 +123,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
     } catch (error) {
       console.error("Registration failed:", error);
-      return null;
+      return null; // Return null on any error to trigger the failure message in the form.
     } finally {
         setIsLoading(false);
     }
