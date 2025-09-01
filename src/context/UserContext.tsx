@@ -84,23 +84,32 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
     try {
       // Check if user already exists
-      let existingUser = await db.execute({
+      const existingUserResult = await db.execute({
         sql: 'SELECT id FROM users WHERE email = ?',
         args: [data.email],
       });
       
-      if (existingUser.rows.length > 0) {
+      if (existingUserResult.rows.length > 0) {
         return null; // User already exists
       }
 
-      const insertResult = await db.execute({
-        sql: 'INSERT INTO users (email, name) VALUES (?, ?) RETURNING id, email, name',
+      // Step 1: Insert the new user.
+      await db.execute({
+        sql: 'INSERT INTO users (email, name) VALUES (?, ?)',
         args: [data.email, data.name],
       });
-      if (insertResult.rows.length === 0){
-          throw new Error("Failed to create user account.");
+      
+      // Step 2: Fetch the user that was just created to get all their info.
+      const newUserResult = await db.execute({
+          sql: 'SELECT id, email, name FROM users WHERE email = ?',
+          args: [data.email]
+      });
+
+      if (newUserResult.rows.length === 0){
+          throw new Error("Failed to retrieve user after creation.");
       }
-      const newUser = insertResult.rows[0] as unknown as User;
+
+      const newUser = newUserResult.rows[0] as unknown as User;
       setUser(newUser);
       
       toast({
