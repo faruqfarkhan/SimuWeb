@@ -1,5 +1,11 @@
 import { createClient } from '@libsql/client';
-import { TURSO_AUTH_TOKEN, TURSO_DATABASE_URL } from '../../env';
+import { config } from 'dotenv';
+
+// Load environment variables from .env file directly here
+config();
+
+const TURSO_DATABASE_URL = process.env.TURSO_DATABASE_URL;
+const TURSO_AUTH_TOKEN = process.env.TURSO_AUTH_TOKEN;
 
 if (!TURSO_DATABASE_URL) {
   // In a real app, you'd want to throw an error here or have a fallback.
