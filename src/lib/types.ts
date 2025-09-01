@@ -18,3 +18,8 @@ export interface PageInfo {
   totalPages: number;
   totalProducts: number;
 }
+
+export interface User {
+  email: string;
+  name?: string;
+}

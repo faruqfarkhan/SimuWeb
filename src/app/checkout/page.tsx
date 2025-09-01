@@ -1,6 +1,7 @@
 'use client';
 
 import { useCart } from '@/context/CartContext';
+import { useUser } from '@/context/UserContext';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -26,6 +27,7 @@ type CheckoutFormValues = z.infer<typeof checkoutSchema>;
 
 export default function CheckoutPage() {
   const { cartItems, cartTotal, clearCart } = useCart();
+  const { user } = useUser();
   const router = useRouter();
   const { toast } = useToast();
 
@@ -35,12 +37,17 @@ export default function CheckoutPage() {
   });
 
   useEffect(() => {
-    if (cartItems.length === 0) {
+    if (!user) {
+      router.replace('/login?redirect=/checkout');
+    } else if (cartItems.length === 0) {
       router.replace('/cart');
+    } else {
+        form.setValue('name', user.name || '');
+        form.setValue('email', user.email);
     }
-  }, [cartItems, router]);
+  }, [cartItems, router, user, form]);
 
-  if (cartItems.length === 0) {
+  if (!user || cartItems.length === 0) {
     return null; // Render nothing while redirecting
   }
 
