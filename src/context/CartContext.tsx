@@ -26,6 +26,8 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return user ? `simuweb_cart_${user.email}` : 'simuweb_cart_guest';
   }, [user]);
 
+  // This effect runs when the user logs in or out.
+  // It loads the cart corresponding to the new user state.
   useEffect(() => {
     try {
       const cartKey = getCartKey();
@@ -33,6 +35,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (storedCart) {
         setCartItems(JSON.parse(storedCart));
       } else {
+        // If no cart is found for the new user, clear the items.
         setCartItems([]);
       }
     } catch (error) {
@@ -41,14 +44,19 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [user, getCartKey]);
 
+  // This effect runs whenever the cartItems state changes.
+  // It saves the current cart to the correct user-specific storage.
   useEffect(() => {
     try {
       const cartKey = getCartKey();
-      localStorage.setItem(cartKey, JSON.stringify(cartItems));
+      // Do not save an empty cart if it's the initial state from a fresh load
+      if (cartItems.length > 0 || localStorage.getItem(cartKey)) {
+        localStorage.setItem(cartKey, JSON.stringify(cartItems));
+      }
     } catch (error) {
       console.error('Failed to save cart to localStorage', error);
     }
-  }, [cartItems, user, getCartKey]);
+  }, [cartItems, getCartKey]);
 
   const addToCart = useCallback((product: Product, quantity = 1) => {
     setCartItems(prevItems => {

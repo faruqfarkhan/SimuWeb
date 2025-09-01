@@ -24,6 +24,7 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return user ? `simuweb_wishlist_${user.email}` : 'simuweb_wishlist_guest';
   }, [user]);
 
+  // This effect runs when the user logs in or out.
   useEffect(() => {
     try {
       const wishlistKey = getWishlistKey();
@@ -31,6 +32,7 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       if (storedWishlist) {
         setWishlistItems(JSON.parse(storedWishlist));
       } else {
+        // If no wishlist is found for the new user, clear the items.
         setWishlistItems([]);
       }
     } catch (error) {
@@ -39,21 +41,26 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, [user, getWishlistKey]);
 
+  // This effect runs whenever the wishlistItems state changes.
   useEffect(() => {
     try {
       const wishlistKey = getWishlistKey();
-      localStorage.setItem(wishlistKey, JSON.stringify(wishlistItems));
+      // Do not save an empty wishlist if it's the initial state from a fresh load
+      if (wishlistItems.length > 0 || localStorage.getItem(wishlistKey)) {
+        localStorage.setItem(wishlistKey, JSON.stringify(wishlistItems));
+      }
     } catch (error) {
       console.error('Failed to save wishlist to localStorage', error);
     }
-  }, [wishlistItems, user, getWishlistKey]);
+  }, [wishlistItems, getWishlistKey]);
 
   const addToWishlist = useCallback((product: Product) => {
     setWishlistItems(prevItems => {
       if (prevItems.some(item => item.id === product.id)) {
         return prevItems; // Already in wishlist
       }
-      return [...prevItems, product];
+      const newItems = [...prevItems, product];
+      return newItems;
     });
     toast({
         title: "Ditambahkan ke Wishlist",
@@ -68,7 +75,8 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       if (itemToRemove) {
         removedItemName = itemToRemove.name;
       }
-      return prevItems.filter(item => item.id !== productId);
+      const newItems = prevItems.filter(item => item.id !== productId);
+      return newItems;
     });
 
     if(removedItemName) {
