@@ -4,15 +4,18 @@ import { useParams } from 'next/navigation';
 import Image from 'next/image';
 import { products } from '@/lib/products';
 import { useCart } from '@/context/CartContext';
+import { useWishlist } from '@/context/WishlistContext';
 import { Button } from '@/components/ui/button';
-import { ShoppingCart } from 'lucide-react';
+import { ShoppingCart, Heart } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { formatPrice } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 
 export default function ProductDetailPage() {
   const { id } = useParams();
   const { addToCart } = useCart();
+  const { wishlistItems, addToWishlist, removeFromWishlist } = useWishlist();
   const product = products.find((p) => p.id === parseInt(id as string));
 
   if (!product) {
@@ -28,6 +31,16 @@ export default function ProductDetailPage() {
     addToCart(product);
   };
 
+  const isWishlisted = wishlistItems.some((item) => item.id === product.id);
+
+  const handleWishlistToggle = () => {
+    if (isWishlisted) {
+      removeFromWishlist(product.id);
+    } else {
+      addToWishlist(product);
+    }
+  };
+
   return (
     <div className="container mx-auto max-w-4xl px-4 py-12">
         <Card className="overflow-hidden">
@@ -41,6 +54,15 @@ export default function ProductDetailPage() {
                         className="object-cover"
                         data-ai-hint={product.dataAiHint}
                         />
+                         <Button
+                            variant="ghost"
+                            size="icon"
+                            className="absolute top-4 right-4 h-10 w-10 rounded-full bg-background/70 hover:bg-background"
+                            onClick={handleWishlistToggle}
+                            aria-label={isWishlisted ? 'Hapus dari Wishlist' : 'Tambah ke Wishlist'}
+                        >
+                            <Heart className={cn("h-5 w-5", isWishlisted ? "fill-red-500 text-red-500" : "text-foreground")} />
+                        </Button>
                     </div>
                 </CardContent>
                 <div className="p-8 flex flex-col justify-center">

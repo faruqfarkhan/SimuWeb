@@ -2,8 +2,9 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ShoppingCart, LayoutGrid, Link2, Bot, LogIn, LogOut, Home, Phone } from 'lucide-react';
+import { ShoppingCart, LayoutGrid, Link2, Bot, LogIn, LogOut, Home, Phone, Heart } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
+import { useWishlist } from '@/context/WishlistContext';
 import { useUser } from '@/context/UserContext';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
@@ -32,6 +33,7 @@ const toolLinks = [
 const Header = () => {
   const pathname = usePathname();
   const { cartCount } = useCart();
+  const { wishlistCount } = useWishlist();
   const { user, logout } = useUser();
 
   const getInitials = (email: string) => {
@@ -81,6 +83,17 @@ const Header = () => {
           </DropdownMenu>
         </nav>
         <div className="flex flex-1 md:flex-none items-center justify-end space-x-2">
+           <Button variant="ghost" size="icon" asChild>
+            <Link href="/wishlist">
+              <Heart className="h-5 w-5" />
+              {wishlistCount > 0 && (
+                <Badge className="absolute top-2 right-2 flex h-5 w-5 items-center justify-center rounded-full bg-accent text-accent-foreground p-0 text-xs">
+                  {wishlistCount}
+                </Badge>
+              )}
+              <span className="sr-only">Wishlist</span>
+            </Link>
+          </Button>
           <Button variant="ghost" size="icon" asChild>
             <Link href="/cart">
               <ShoppingCart className="h-5 w-5" />
