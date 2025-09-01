@@ -68,7 +68,8 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   useEffect(() => {
-    if (isUserLoading) return;
+    // If the user's status is loading, or the DB client isn't ready, wait.
+    if (isUserLoading || !db) return;
 
     const loadWishlist = async () => {
         setIsLoading(true);

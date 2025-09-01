@@ -86,7 +86,8 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     // This effect runs whenever the user's login status changes.
-    if (isUserLoading) return;
+    // If the db client isn't ready, don't do anything.
+    if (isUserLoading || !db) return;
 
     const loadCart = async () => {
       setIsLoading(true);
