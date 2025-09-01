@@ -1,3 +1,4 @@
+
 import { products as allProducts } from '@/lib/products';
 import type { Product, PageInfo } from '@/lib/types';
 import { db } from '@/lib/db';
@@ -34,7 +35,7 @@ export async function seedProducts() {
     const results = await db.batch(statements, 'write');
     
     // Check if any rows were affected to give a meaningful log.
-    const rowsAffected = results.reduce((acc, result) => acc + (result.rowsAffected || 0), 0);
+    const rowsAffected = results.reduce((acc, result) => acc.rowsAffected + (result.rowsAffected || 0), { rowsAffected: 0 });
     if (rowsAffected > 0) {
       console.log(`Successfully seeded ${rowsAffected} new products.`);
     } else {

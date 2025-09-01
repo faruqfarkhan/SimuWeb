@@ -1,21 +1,20 @@
+
 import { createClient } from '@libsql/client';
 import { config } from 'dotenv';
 
-// Load environment variables from .env file directly here
+// Load environment variables from .env file directly here.
+// This is the most reliable way to ensure they are available for the server-side DB client.
 config();
 
 const TURSO_DATABASE_URL = process.env.TURSO_DATABASE_URL;
 const TURSO_AUTH_TOKEN = process.env.TURSO_AUTH_TOKEN;
 
 if (!TURSO_DATABASE_URL) {
-  // In a real app, you'd want to throw an error here or have a fallback.
-  // For this simulation, we'll allow it to run without a DB for guest users,
-  // but operations requiring the DB will fail.
-  console.warn('TURSO_DATABASE_URL is not defined');
+  console.warn('TURSO_DATABASE_URL is not defined. Database operations will fail.');
 }
 
 if (!TURSO_AUTH_TOKEN) {
-  console.warn('TURSO_AUTH_TOKEN is not defined');
+  console.warn('TURSO_AUTH_TOKEN is not defined. Database operations will fail.');
 }
 
 // The client is exported, but it might be null if the env vars are not set.
