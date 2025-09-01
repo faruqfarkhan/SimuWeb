@@ -1,15 +1,144 @@
-import { products } from '@/lib/products';
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { getProducts } from '@/services/product-service';
+import type { Product, PageInfo } from '@/lib/types';
 import { ProductCard } from '@/components/ProductCard';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
+import { usePagination, DOTS } from '@/hooks/use-pagination';
+import { Search } from 'lucide-react';
+
+const PRODUCTS_PER_PAGE = 8;
 
 export default function Home() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  
+  const [products, setProducts] = useState<Product[]>([]);
+  const [pageInfo, setPageInfo] = useState<PageInfo | null>(null);
+
+  const searchTerm = searchParams.get('q') || '';
+  const sortBy = searchParams.get('sortBy') || 'name-asc';
+  const currentPage = Number(searchParams.get('page')) || 1;
+
+  useEffect(() => {
+    const { products, pageInfo } = getProducts({ 
+      searchTerm, 
+      sortBy, 
+      page: currentPage 
+    });
+    setProducts(products);
+    setPageInfo(pageInfo);
+  }, [searchTerm, sortBy, currentPage]);
+
+  const handleSearch = (term: string) => {
+    const params = new URLSearchParams(searchParams);
+    if (term) {
+      params.set('q', term);
+    } else {
+      params.delete('q');
+    }
+    params.set('page', '1');
+    router.push(`?${params.toString()}`);
+  };
+
+  const handleSort = (value: string) => {
+    const params = new URLSearchParams(searchParams);
+    params.set('sortBy', value);
+    params.set('page', '1');
+    router.push(`?${params.toString()}`);
+  };
+
+  const createPageURL = (pageNumber: number | string) => {
+    const params = new URLSearchParams(searchParams);
+    params.set('page', String(pageNumber));
+    return `?${params.toString()}`;
+  };
+
+  const paginationRange = usePagination({
+    currentPage: pageInfo?.currentPage || 1,
+    totalCount: pageInfo?.totalProducts || 0,
+    pageSize: PRODUCTS_PER_PAGE,
+  });
+
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="font-headline text-4xl font-bold mb-8 text-center">Our Products</h1>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-        {products.map((product) => (
-          <ProductCard key={product.id} product={product} />
-        ))}
+      <div className="text-center mb-8">
+        <h1 className="font-headline text-4xl font-bold">Produk Kami</h1>
+        <p className="text-muted-foreground mt-2">Jelajahi pilihan instrumen dan perlengkapan musik kami.</p>
       </div>
+
+      <div className="flex flex-col md:flex-row gap-4 mb-8">
+        <div className="relative flex-grow">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <Input
+            type="search"
+            placeholder="Cari produk..."
+            className="pl-10 w-full"
+            defaultValue={searchTerm}
+            onChange={(e) => handleSearch(e.target.value)}
+            />
+        </div>
+        <Select value={sortBy} onValueChange={handleSort}>
+          <SelectTrigger className="w-full md:w-[200px]">
+            <SelectValue placeholder="Urutkan berdasarkan" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="name-asc">Nama (A-Z)</SelectItem>
+            <SelectItem value="name-desc">Nama (Z-A)</SelectItem>
+            <SelectItem value="price-asc">Harga (Terendah)</SelectItem>
+            <SelectItem value="price-desc">Harga (Tertinggi)</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {products.length > 0 ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+          {products.map((product) => (
+            <ProductCard key={product.id} product={product} />
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-16">
+            <p className="text-muted-foreground">Tidak ada produk yang ditemukan.</p>
+        </div>
+      )}
+
+      {pageInfo && pageInfo.totalPages > 1 && (
+        <Pagination className="mt-12">
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious 
+                href={createPageURL(currentPage - 1)}
+                aria-disabled={currentPage === 1}
+                className={currentPage === 1 ? "pointer-events-none opacity-50" : undefined}
+              />
+            </PaginationItem>
+            {paginationRange?.map((pageNumber, index) => {
+              if (pageNumber === DOTS) {
+                return <PaginationEllipsis key={`${pageNumber}-${index}`} />;
+              }
+              return (
+                <PaginationItem key={pageNumber}>
+                  <PaginationLink href={createPageURL(pageNumber)} isActive={currentPage === pageNumber}>
+                    {pageNumber}
+                  </PaginationLink>
+                </PaginationItem>
+              );
+            })}
+            <PaginationItem>
+              <PaginationNext 
+                href={createPageURL(currentPage + 1)}
+                aria-disabled={currentPage === pageInfo.totalPages}
+                className={currentPage === pageInfo.totalPages ? "pointer-events-none opacity-50" : undefined}
+                />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+      )}
     </div>
   );
 }

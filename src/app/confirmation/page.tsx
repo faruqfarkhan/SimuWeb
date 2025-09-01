@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { CheckCircle2 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import { formatPrice } from '@/lib/utils';
 
 declare global {
   interface Window {
@@ -16,14 +17,17 @@ declare global {
 
 export default function ConfirmationPage() {
   const [orderId, setOrderId] = useState<string | null>(null);
-  const [orderTotal, setOrderTotal] = useState<string | null>(null);
+  const [orderTotal, setOrderTotal] = useState<number | null>(null);
   const router = useRouter();
 
   useEffect(() => {
-    const total = localStorage.getItem('simuweb_order_total');
-    if (total) {
+    const totalString = localStorage.getItem('simuweb_order_total');
+    if (totalString) {
+      const total = parseFloat(totalString);
+      const newOrderId = `SW-${Math.floor(Math.random() * 100000000)}`;
+
       setOrderTotal(total);
-      setOrderId(`SW-${Math.floor(Math.random() * 100000000)}`);
+      setOrderId(newOrderId);
 
       // Datalayer logic
       window.dataLayer = window.dataLayer || [];
@@ -32,9 +36,10 @@ export default function ConfirmationPage() {
         ecommerce: {
           purchase: {
             actionField: {
-              id: `SW-${Math.floor(Math.random() * 100000000)}`, // Transaction ID. Required for purchases.
+              id: newOrderId, // Transaction ID. Required for purchases.
               revenue: total, // Total transaction value (including tax and shipping)
             },
+            products: [], // Optional. A list of products purchased.
           },
         },
       });
@@ -47,10 +52,10 @@ export default function ConfirmationPage() {
     }
   }, [router]);
 
-  if (!orderId || !orderTotal) {
+  if (!orderId || orderTotal === null) {
     return (
       <div className="container mx-auto px-4 py-8 text-center">
-        <p>Loading confirmation...</p>
+        <p>Memuat konfirmasi...</p>
       </div>
     );
   }
@@ -60,23 +65,23 @@ export default function ConfirmationPage() {
       <Card className="w-full max-w-lg text-center shadow-xl">
         <CardHeader className="items-center">
             <CheckCircle2 className="h-20 w-20 text-green-500 mb-4" />
-            <CardTitle className="font-headline text-3xl">Thank You For Your Order!</CardTitle>
-            <CardDescription className="text-base">Your purchase has been successfully simulated.</CardDescription>
+            <CardTitle className="font-headline text-3xl">Terima Kasih Atas Pesanan Anda!</CardTitle>
+            <CardDescription className="text-base">Pembelian Anda telah berhasil disimulasikan.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
             <Separator />
             <div className="grid grid-cols-2 gap-4 text-left">
-                <div className="font-medium">Order ID:</div>
+                <div className="font-medium">ID Pesanan:</div>
                 <div className="text-right font-mono">{orderId}</div>
                 
-                <div className="font-medium">Total Payment:</div>
-                <div className="text-right font-bold text-lg">${orderTotal}</div>
+                <div className="font-medium">Total Pembayaran:</div>
+                <div className="text-right font-bold text-lg">{formatPrice(orderTotal)}</div>
             </div>
-            <p className="text-sm text-muted-foreground">This is a simulated confirmation. No real order has been placed or payment processed.</p>
+            <p className="text-sm text-muted-foreground">Ini adalah konfirmasi simulasi. Tidak ada pesanan nyata yang telah ditempatkan atau pembayaran yang diproses.</p>
         </CardContent>
         <CardFooter>
             <Button asChild className="w-full" size="lg">
-                <Link href="/">Continue Shopping</Link>
+                <Link href="/">Lanjutkan Belanja</Link>
             </Button>
         </CardFooter>
       </Card>

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { ShoppingCart } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { formatPrice } from '@/lib/utils';
 
 export default function ProductDetailPage() {
   const { id } = useParams();
@@ -17,8 +18,8 @@ export default function ProductDetailPage() {
   if (!product) {
     return (
         <div className="container mx-auto px-4 py-8 text-center">
-            <h1 className="font-headline text-3xl font-bold">Product not found</h1>
-            <p>We couldn't find the product you're looking for.</p>
+            <h1 className="font-headline text-3xl font-bold">Produk tidak ditemukan</h1>
+            <p>Kami tidak dapat menemukan produk yang Anda cari.</p>
         </div>
     );
   }
@@ -49,7 +50,7 @@ export default function ProductDetailPage() {
                     <Separator className="my-6" />
 
                     <p className="font-headline text-4xl font-extrabold text-primary mb-6">
-                        ${product.price.toFixed(2)}
+                        {formatPrice(product.price)}
                     </p>
 
                     <p className="text-foreground/80 mb-8 flex-grow">
@@ -57,7 +58,7 @@ export default function ProductDetailPage() {
                     </p>
 
                     <Button size="lg" onClick={handleAddToCart} className="w-full">
-                        <ShoppingCart className="mr-2 h-5 w-5" /> Add to Cart
+                        <ShoppingCart className="mr-2 h-5 w-5" /> Tambah ke Keranjang
                     </Button>
                 </div>
             </div>

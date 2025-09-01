@@ -8,24 +8,24 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Trash2, ShoppingBag } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { formatPrice } from '@/lib/utils';
 
 export default function CartPage() {
   const { cartItems, updateQuantity, removeFromCart, cartTotal } = useCart();
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="font-headline text-4xl font-bold mb-8">Shopping Cart</h1>
+      <h1 className="font-headline text-4xl font-bold mb-8">Keranjang Belanja</h1>
       {cartItems.length === 0 ? (
         <Card className="text-center py-20">
             <CardHeader>
                 <ShoppingBag className="mx-auto h-16 w-16 text-muted-foreground" />
-                <CardTitle className="mt-4 font-headline text-2xl">Your cart is empty</CardTitle>
+                <CardTitle className="mt-4 font-headline text-2xl">Keranjang Anda kosong</CardTitle>
             </CardHeader>
             <CardContent>
-                <p className="text-muted-foreground mb-6">Looks like you haven't added anything to your cart yet.</p>
+                <p className="text-muted-foreground mb-6">Sepertinya Anda belum menambahkan apa pun ke keranjang.</p>
                 <Button asChild>
-                    <Link href="/">Start Shopping</Link>
+                    <Link href="/">Mulai Belanja</Link>
                 </Button>
             </CardContent>
         </Card>
@@ -37,10 +37,10 @@ export default function CartPage() {
                     <Table>
                         <TableHeader>
                         <TableRow>
-                            <TableHead className="w-[100px] hidden md:table-cell">Product</TableHead>
-                            <TableHead>Details</TableHead>
-                            <TableHead className="text-center">Quantity</TableHead>
-                            <TableHead className="text-right">Price</TableHead>
+                            <TableHead className="w-[100px] hidden md:table-cell">Produk</TableHead>
+                            <TableHead>Detail</TableHead>
+                            <TableHead className="text-center">Jumlah</TableHead>
+                            <TableHead className="text-right">Harga</TableHead>
                             <TableHead className="w-[50px]"></TableHead>
                         </TableRow>
                         </TableHeader>
@@ -72,11 +72,11 @@ export default function CartPage() {
                                     />
 
                                 </TableCell>
-                                <TableCell className="text-right font-medium">${(item.product.price * item.quantity).toFixed(2)}</TableCell>
+                                <TableCell className="text-right font-medium">{formatPrice(item.product.price * item.quantity)}</TableCell>
                                 <TableCell>
                                     <Button variant="ghost" size="icon" onClick={() => removeFromCart(item.product.id)}>
                                         <Trash2 className="h-4 w-4" />
-                                        <span className="sr-only">Remove item</span>
+                                        <span className="sr-only">Hapus item</span>
                                     </Button>
                                 </TableCell>
                             </TableRow>
@@ -90,25 +90,25 @@ export default function CartPage() {
           <div className="lg:col-span-1">
             <Card>
                 <CardHeader>
-                    <CardTitle className="font-headline text-2xl">Order Summary</CardTitle>
+                    <CardTitle className="font-headline text-2xl">Ringkasan Pesanan</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="flex justify-between">
                         <span>Subtotal</span>
-                        <span>${cartTotal.toFixed(2)}</span>
+                        <span>{formatPrice(cartTotal)}</span>
                     </div>
                     <div className="flex justify-between">
-                        <span>Shipping</span>
-                        <span>FREE</span>
+                        <span>Pengiriman</span>
+                        <span>GRATIS</span>
                     </div>
                     <div className="flex justify-between font-bold text-lg">
                         <span>Total</span>
-                        <span>${cartTotal.toFixed(2)}</span>
+                        <span>{formatPrice(cartTotal)}</span>
                     </div>
                 </CardContent>
                 <CardFooter>
                     <Button asChild size="lg" className="w-full">
-                        <Link href="/checkout">Proceed to Checkout</Link>
+                        <Link href="/checkout">Lanjutkan ke Checkout</Link>
                     </Button>
                 </CardFooter>
             </Card>

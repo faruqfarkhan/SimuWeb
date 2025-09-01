@@ -11,13 +11,14 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
+import { formatPrice } from '@/lib/utils';
 
 const checkoutSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters'),
-  email: z.string().email('Please enter a valid email address'),
-  address: z.string().min(10, 'Address must be at least 10 characters'),
-  city: z.string().min(2, 'City must be at least 2 characters'),
-  zip: z.string().regex(/^\d{5}$/, 'Please enter a valid 5-digit zip code'),
+  name: z.string().min(2, 'Nama harus terdiri dari minimal 2 karakter'),
+  email: z.string().email('Silakan masukkan alamat email yang valid'),
+  address: z.string().min(10, 'Alamat harus terdiri dari minimal 10 karakter'),
+  city: z.string().min(2, 'Kota harus terdiri dari minimal 2 karakter'),
+  zip: z.string().regex(/^\d{5}$/, 'Silakan masukkan kode pos 5 digit yang valid'),
 });
 
 type CheckoutFormValues = z.infer<typeof checkoutSchema>;
@@ -41,13 +42,13 @@ export default function CheckoutPage() {
     console.log('Checkout data:', data);
     
     // Store total for confirmation page
-    localStorage.setItem('simuweb_order_total', cartTotal.toFixed(2));
+    localStorage.setItem('simuweb_order_total', cartTotal.toFixed(0));
     
     clearCart();
     
     toast({
-      title: 'Purchase Successful!',
-      description: 'Redirecting to confirmation page...',
+      title: 'Pembelian Berhasil!',
+      description: 'Mengarahkan ke halaman konfirmasi...',
     });
     
     router.push('/confirmation');
@@ -60,18 +61,18 @@ export default function CheckoutPage() {
         <div>
           <Card>
             <CardHeader>
-              <CardTitle className="font-headline">Shipping Information</CardTitle>
-              <CardDescription>Enter your details to complete the purchase.</CardDescription>
+              <CardTitle className="font-headline">Informasi Pengiriman</CardTitle>
+              <CardDescription>Masukkan detail Anda untuk menyelesaikan pembelian.</CardDescription>
             </CardHeader>
             <CardContent>
               <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <form id="checkout-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                   <FormField
                     control={form.control}
                     name="name"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Full Name</FormLabel>
+                        <FormLabel>Nama Lengkap</FormLabel>
                         <FormControl>
                           <Input placeholder="John Doe" {...field} />
                         </FormControl>
@@ -84,9 +85,9 @@ export default function CheckoutPage() {
                     name="email"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Email Address</FormLabel>
+                        <FormLabel>Alamat Email</FormLabel>
                         <FormControl>
-                          <Input placeholder="you@example.com" {...field} />
+                          <Input placeholder="anda@contoh.com" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -97,9 +98,9 @@ export default function CheckoutPage() {
                     name="address"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Street Address</FormLabel>
+                        <FormLabel>Alamat Jalan</FormLabel>
                         <FormControl>
-                          <Input placeholder="123 Main St" {...field} />
+                          <Input placeholder="Jl. Jend. Sudirman No. 123" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -111,9 +112,9 @@ export default function CheckoutPage() {
                       name="city"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>City</FormLabel>
+                          <FormLabel>Kota</FormLabel>
                           <FormControl>
-                            <Input placeholder="Anytown" {...field} />
+                            <Input placeholder="Jakarta" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -124,7 +125,7 @@ export default function CheckoutPage() {
                       name="zip"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>ZIP Code</FormLabel>
+                          <FormLabel>Kode Pos</FormLabel>
                           <FormControl>
                             <Input placeholder="12345" {...field} />
                           </FormControl>
@@ -141,24 +142,24 @@ export default function CheckoutPage() {
         <div>
           <Card>
             <CardHeader>
-              <CardTitle className="font-headline">Order Summary</CardTitle>
+              <CardTitle className="font-headline">Ringkasan Pesanan</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
               {cartItems.map(item => (
                 <div key={item.product.id} className="flex justify-between text-sm">
                   <span>{item.product.name} x {item.quantity}</span>
-                  <span>${(item.product.price * item.quantity).toFixed(2)}</span>
+                  <span>{formatPrice(item.product.price * item.quantity)}</span>
                 </div>
               ))}
               <hr className="my-2" />
               <div className="flex justify-between font-bold text-lg">
                 <span>Total</span>
-                <span>${cartTotal.toFixed(2)}</span>
+                <span>{formatPrice(cartTotal)}</span>
               </div>
             </CardContent>
             <CardFooter>
-              <Button type="submit" form="checkout-form" size="lg" className="w-full" onClick={form.handleSubmit(onSubmit)}>
-                Purchase
+              <Button type="submit" form="checkout-form" size="lg" className="w-full">
+                Beli
               </Button>
             </CardFooter>
           </Card>

@@ -53,17 +53,23 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return [...prevItems, { product, quantity }];
     });
     toast({
-        title: "Added to Cart",
-        description: `${product.name} has been added to your cart.`,
+        title: "Ditambahkan ke Keranjang",
+        description: `${product.name} telah ditambahkan ke keranjang Anda.`,
     })
   }, [toast]);
 
   const removeFromCart = useCallback((productId: number) => {
-    setCartItems(prevItems => prevItems.filter(item => item.product.id !== productId));
-    toast({
-        title: "Item Removed",
-        description: "An item has been removed from your cart.",
-    })
+    setCartItems(prevItems => {
+      const itemToRemove = prevItems.find(item => item.product.id === productId);
+      const newItems = prevItems.filter(item => item.product.id !== productId);
+      if (itemToRemove) {
+        toast({
+            title: "Item Dihapus",
+            description: `${itemToRemove.product.name} telah dihapus dari keranjang Anda.`,
+        })
+      }
+      return newItems;
+    });
   }, [toast]);
 
   const updateQuantity = useCallback((productId: number, quantity: number) => {
