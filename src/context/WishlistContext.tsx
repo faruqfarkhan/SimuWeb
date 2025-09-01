@@ -15,14 +15,13 @@ interface WishlistContextType {
   removeFromWishlist: (productId: number) => void;
   isInWishlist: (productId: number) => boolean;
   wishlistCount: number;
-  isLoading: boolean;
+  isLoading: boolean; // Tetap ada untuk skeleton UI
 }
 
 const WishlistContext = createContext<WishlistContextType | undefined>(undefined);
 
 export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [wishlistItems, setWishlistItems] = useState<Product[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const { user, isLoading: isUserLoading } = useUser();
 
@@ -46,13 +45,15 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, [toast]);
   
-  const migrateGuestWishlistToDb = async (userId: number) => {
+  const migrateGuestWishlistToDb = useCallback(async (userId: number) => {
+    // Migrasi hanya terjadi jika DB siap
+    if (!db) return;
     try {
       const guestWishlistJson = localStorage.getItem(GUEST_WISHLIST_KEY);
       if (!guestWishlistJson) return;
 
       const guestWishlist: Product[] = JSON.parse(guestWishlistJson);
-      if (guestWishlist.length === 0 || !db) return;
+      if (guestWishlist.length === 0) return;
 
       // Use INSERT ... ON CONFLICT DO NOTHING to avoid duplicates.
       const statements = guestWishlist.map(item => ({
@@ -65,14 +66,15 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     } catch (error) {
       console.error("Failed to migrate guest wishlist:", error);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    // If the user's status is loading, or the DB client isn't ready, wait.
-    if (isUserLoading || !db) return;
+    if (isUserLoading) {
+      // Jika status user masih loading, jangan lakukan apa-apa.
+      return;
+    }
 
     const loadWishlist = async () => {
-        setIsLoading(true);
         if (user) {
             await migrateGuestWishlistToDb(user.id);
             const dbWishlist = await fetchDbWishlist(user.id);
@@ -81,11 +83,10 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             const guestWishlistJson = localStorage.getItem(GUEST_WISHLIST_KEY);
             setWishlistItems(guestWishlistJson ? JSON.parse(guestWishlistJson) : []);
         }
-        setIsLoading(false);
     };
 
     loadWishlist();
-  }, [user, isUserLoading, fetchDbWishlist]);
+  }, [user, isUserLoading, fetchDbWishlist, migrateGuestWishlistToDb]);
 
 
   const addToWishlist = useCallback(async (product: Product) => {
@@ -161,8 +162,8 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     removeFromWishlist,
     isInWishlist,
     wishlistCount,
-    isLoading
-  }), [wishlistItems, addToWishlist, removeFromWishlist, isInWishlist, wishlistCount, isLoading]);
+    isLoading: isUserLoading // isLoading sekarang mencerminkan status user
+  }), [wishlistItems, addToWishlist, removeFromWishlist, isInWishlist, wishlistCount, isUserLoading]);
 
   return (
     <WishlistContext.Provider value={value}>

@@ -17,14 +17,13 @@ interface CartContextType {
   clearCart: () => void;
   cartCount: number;
   cartTotal: number;
-  isLoading: boolean;
+  isLoading: boolean; // Tetap ada untuk skeleton UI
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const { user, isLoading: isUserLoading } = useUser();
 
@@ -61,36 +60,37 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [toast]);
   
-  // This function handles migrating a guest's cart to their account upon login.
-  const migrateGuestCartToDb = async (userId: number) => {
+  const migrateGuestCartToDb = useCallback(async (userId: number) => {
+    // Migrasi hanya terjadi jika DB siap
+    if (!db) return;
     try {
       const guestCartJson = localStorage.getItem(GUEST_CART_KEY);
       if (!guestCartJson) return;
 
       const guestCart: CartItem[] = JSON.parse(guestCartJson);
-      if (guestCart.length === 0 || !db) return;
+      if (guestCart.length === 0) return;
 
-      // Use INSERT ... ON CONFLICT to merge quantities if the item already exists in the DB cart
       const statements = guestCart.map(item => ({
         sql: 'INSERT INTO cart_items (user_id, product_id, quantity) VALUES (?, ?, ?) ON CONFLICT(user_id, product_id) DO UPDATE SET quantity = cart_items.quantity + excluded.quantity',
         args: [userId, item.product.id, item.quantity],
       }));
 
       await db.batch(statements, 'write');
-      localStorage.removeItem(GUEST_CART_KEY); // Clear the guest cart after migration
+      localStorage.removeItem(GUEST_CART_KEY);
     } catch (error) {
       console.error("Failed to migrate guest cart:", error);
     }
-  };
+  }, []);
 
 
   useEffect(() => {
-    // This effect runs whenever the user's login status changes.
-    // If the db client isn't ready, don't do anything.
-    if (isUserLoading || !db) return;
+    if (isUserLoading) {
+      // Jika status user masih loading, jangan lakukan apa-apa.
+      // Ini mencegah pengambilan data yang prematur.
+      return;
+    }
 
     const loadCart = async () => {
-      setIsLoading(true);
       if (user) {
         // User is logged in
         await migrateGuestCartToDb(user.id);
@@ -101,11 +101,10 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const guestCartJson = localStorage.getItem(GUEST_CART_KEY);
         setCartItems(guestCartJson ? JSON.parse(guestCartJson) : []);
       }
-      setIsLoading(false);
     };
 
     loadCart();
-  }, [user, isUserLoading, fetchDbCart]);
+  }, [user, isUserLoading, fetchDbCart, migrateGuestCartToDb]);
 
   const addToCart = useCallback(async (product: Product, quantity = 1) => {
     if (!user) {
@@ -239,8 +238,8 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     clearCart,
     cartCount,
     cartTotal,
-    isLoading,
-  }), [cartItems, addToCart, removeFromCart, updateQuantity, clearCart, cartCount, cartTotal, isLoading]);
+    isLoading: isUserLoading, // isLoading sekarang mencerminkan status user
+  }), [cartItems, addToCart, removeFromCart, updateQuantity, clearCart, cartCount, cartTotal, isUserLoading]);
 
   return (
     <CartContext.Provider value={value}>
