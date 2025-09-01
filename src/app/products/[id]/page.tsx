@@ -11,12 +11,42 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { formatPrice } from '@/lib/utils';
 import { cn } from '@/lib/utils';
+import { useEffect } from 'react';
+
+// Datalayer is a global object, so we declare it here to avoid TypeScript errors.
+declare global {
+  interface Window {
+    dataLayer: any[];
+  }
+}
 
 export default function ProductDetailPage() {
   const { id } = useParams();
   const { addToCart } = useCart();
   const { wishlistItems, addToWishlist, removeFromWishlist } = useWishlist();
   const product = products.find((p) => p.id === parseInt(id as string));
+  
+  useEffect(() => {
+    if (product) {
+      window.dataLayer = window.dataLayer || [];
+      window.dataLayer.push({ ecommerce: null }); // Clear the previous ecommerce object
+      window.dataLayer.push({
+        event: 'view_item',
+        ecommerce: {
+          currency: 'IDR',
+          value: product.price,
+          items: [
+            {
+              item_id: product.id.toString(),
+              item_name: product.name,
+              price: product.price,
+              quantity: 1,
+            },
+          ],
+        },
+      });
+    }
+  }, [product]);
 
   if (!product) {
     return (
