@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { getProducts } from '@/services/product-service';
 import type { Product, PageInfo } from '@/lib/types';
@@ -10,10 +11,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import { usePagination, DOTS } from '@/hooks/use-pagination';
 import { Search } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const PRODUCTS_PER_PAGE = 8;
 
-export default function ProductsPage() {
+function ProductsComponent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   
@@ -35,7 +37,7 @@ export default function ProductsPage() {
   }, [searchTerm, sortBy, currentPage]);
 
   const handleSearch = (term: string) => {
-    const params = new URLSearchParams(searchParams);
+    const params = new URLSearchParams(searchParams.toString());
     if (term) {
       params.set('q', term);
     } else {
@@ -46,14 +48,14 @@ export default function ProductsPage() {
   };
 
   const handleSort = (value: string) => {
-    const params = new URLSearchParams(searchParams);
+    const params = new URLSearchParams(searchParams.toString());
     params.set('sortBy', value);
     params.set('page', '1');
     router.push(`/products?${params.toString()}`);
   };
 
   const createPageURL = (pageNumber: number | string) => {
-    const params = new URLSearchParams(searchParams);
+    const params = new URLSearchParams(searchParams.toString());
     params.set('page', String(pageNumber));
     return `/products?${params.toString()}`;
   };
@@ -65,12 +67,7 @@ export default function ProductsPage() {
   });
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="text-center mb-8">
-        <h1 className="font-headline text-4xl font-bold">Produk Kami</h1>
-        <p className="text-muted-foreground mt-2">Jelajahi pilihan instrumen dan perlengkapan musik kami.</p>
-      </div>
-
+    <>
       <div className="flex flex-col md:flex-row gap-4 mb-8">
         <div className="relative flex-grow">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -139,6 +136,42 @@ export default function ProductsPage() {
           </PaginationContent>
         </Pagination>
       )}
+    </>
+  );
+}
+
+function ProductsSkeleton() {
+    return (
+        <div>
+            <div className="flex flex-col md:flex-row gap-4 mb-8">
+                <Skeleton className="h-10 flex-grow" />
+                <Skeleton className="h-10 w-full md:w-[200px]" />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                {Array.from({ length: 8 }).map((_, i) => (
+                    <div key={i} className="space-y-4">
+                        <Skeleton className="h-48 w-full" />
+                        <Skeleton className="h-6 w-3/4" />
+                        <Skeleton className="h-4 w-1/2" />
+                        <Skeleton className="h-10 w-full" />
+                    </div>
+                ))}
+            </div>
+        </div>
+    )
+}
+
+// This is the main export for the page. It's a server component.
+export default function ProductsPage() {
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <div className="text-center mb-8">
+        <h1 className="font-headline text-4xl font-bold">Produk Kami</h1>
+        <p className="text-muted-foreground mt-2">Jelajahi pilihan instrumen dan perlengkapan musik kami.</p>
+      </div>
+      <Suspense fallback={<ProductsSkeleton />}>
+        <ProductsComponent />
+      </Suspense>
     </div>
   );
 }
