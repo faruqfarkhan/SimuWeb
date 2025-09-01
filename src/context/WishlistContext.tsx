@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import type { Product } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
+import { useUser } from './UserContext';
 
 interface WishlistContextType {
   wishlistItems: Product[];
@@ -17,26 +18,35 @@ const WishlistContext = createContext<WishlistContextType | undefined>(undefined
 export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [wishlistItems, setWishlistItems] = useState<Product[]>([]);
   const { toast } = useToast();
+  const { user } = useUser();
+
+  const getWishlistKey = useCallback(() => {
+    return user ? `simuweb_wishlist_${user.email}` : 'simuweb_wishlist_guest';
+  }, [user]);
 
   useEffect(() => {
     try {
-      const storedWishlist = localStorage.getItem('simuweb_wishlist');
+      const wishlistKey = getWishlistKey();
+      const storedWishlist = localStorage.getItem(wishlistKey);
       if (storedWishlist) {
         setWishlistItems(JSON.parse(storedWishlist));
+      } else {
+        setWishlistItems([]);
       }
     } catch (error) {
       console.error('Failed to parse wishlist from localStorage', error);
       setWishlistItems([]);
     }
-  }, []);
+  }, [user, getWishlistKey]);
 
   useEffect(() => {
     try {
-      localStorage.setItem('simuweb_wishlist', JSON.stringify(wishlistItems));
+      const wishlistKey = getWishlistKey();
+      localStorage.setItem(wishlistKey, JSON.stringify(wishlistItems));
     } catch (error) {
       console.error('Failed to save wishlist to localStorage', error);
     }
-  }, [wishlistItems]);
+  }, [wishlistItems, user, getWishlistKey]);
 
   const addToWishlist = useCallback((product: Product) => {
     setWishlistItems(prevItems => {

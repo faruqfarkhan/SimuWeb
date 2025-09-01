@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import type { CartItem, Product } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
+import { useUser } from './UserContext';
 
 interface CartContextType {
   cartItems: CartItem[];
@@ -19,26 +20,35 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const { toast } = useToast();
+  const { user } = useUser();
+
+  const getCartKey = useCallback(() => {
+    return user ? `simuweb_cart_${user.email}` : 'simuweb_cart_guest';
+  }, [user]);
 
   useEffect(() => {
     try {
-      const storedCart = localStorage.getItem('simuweb_cart');
+      const cartKey = getCartKey();
+      const storedCart = localStorage.getItem(cartKey);
       if (storedCart) {
         setCartItems(JSON.parse(storedCart));
+      } else {
+        setCartItems([]);
       }
     } catch (error) {
       console.error('Failed to parse cart from localStorage', error);
       setCartItems([]);
     }
-  }, []);
+  }, [user, getCartKey]);
 
   useEffect(() => {
     try {
-      localStorage.setItem('simuweb_cart', JSON.stringify(cartItems));
+      const cartKey = getCartKey();
+      localStorage.setItem(cartKey, JSON.stringify(cartItems));
     } catch (error) {
       console.error('Failed to save cart to localStorage', error);
     }
-  }, [cartItems]);
+  }, [cartItems, user, getCartKey]);
 
   const addToCart = useCallback((product: Product, quantity = 1) => {
     setCartItems(prevItems => {
