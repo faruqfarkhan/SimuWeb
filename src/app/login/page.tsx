@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { Suspense } from 'react';
@@ -21,6 +22,7 @@ const loginSchema = z.object({
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
+// This is the actual client component that uses the hooks.
 function LoginComponent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -91,6 +93,7 @@ function LoginComponent() {
   );
 }
 
+// A simple skeleton component to show while the login form is loading.
 function LoginSkeleton() {
   return (
     <Card className="w-full max-w-md">
@@ -113,6 +116,10 @@ function LoginSkeleton() {
   )
 }
 
+
+// The main export for the page. It's a server component that wraps the client component in Suspense.
+// Note: This file itself is a client component because it has 'use client' at the top. 
+// This is a common pattern to resolve this specific error.
 export default function LoginPage() {
   return (
     <div className="container mx-auto flex items-center justify-center min-h-[calc(100vh-10rem)] px-4 py-8">
