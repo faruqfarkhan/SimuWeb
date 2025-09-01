@@ -65,6 +65,9 @@ export default function CheckoutPage() {
     console.log('Checkout data:', data);
     
     // In a real app, you would send this to a payment gateway and create an order in the DB.
+
+    // Store cart data for confirmation page analytics
+    sessionStorage.setItem('simuweb_last_order_items', JSON.stringify(cartItems));
     
     // We clear the cart after successful "order".
     clearCart();

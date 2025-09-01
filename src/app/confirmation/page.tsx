@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { CheckCircle2 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { formatPrice } from '@/lib/utils';
+import type { CartItem } from '@/lib/types';
 
 // Datalayer is a global object, so we declare it here to avoid TypeScript errors.
 declare global {
@@ -25,8 +26,12 @@ function ConfirmationContent() {
 
   useEffect(() => {
     const totalString = searchParams.get('total');
-    if (totalString) {
+    // Retrieve the cart items from sessionStorage
+    const lastOrderItemsString = sessionStorage.getItem('simuweb_last_order_items');
+
+    if (totalString && lastOrderItemsString) {
       const total = parseFloat(totalString);
+      const lastOrderItems: CartItem[] = JSON.parse(lastOrderItemsString);
       const newOrderId = `SW-${Math.floor(Math.random() * 100000000)}`;
 
       setOrderTotal(total);
@@ -34,21 +39,30 @@ function ConfirmationContent() {
 
       // Datalayer logic for analytics
       window.dataLayer = window.dataLayer || [];
+      
+      const purchaseProducts = lastOrderItems.map(item => ({
+        item_id: item.product.id.toString(),
+        item_name: item.product.name,
+        price: item.product.price,
+        quantity: item.quantity,
+      }));
+
+      window.dataLayer.push({ ecommerce: null }); // Clear the previous ecommerce object
       window.dataLayer.push({
         event: 'purchase',
         ecommerce: {
-          purchase: {
-            actionField: {
-              id: newOrderId,
-              revenue: total,
-            },
-            products: [], // In a real app, you'd populate this with cart items.
-          },
+          transaction_id: newOrderId,
+          value: total,
+          currency: 'IDR',
+          items: purchaseProducts,
         },
       });
 
+      // Clean up sessionStorage after use
+      sessionStorage.removeItem('simuweb_last_order_items');
+
     } else {
-      // If there's no total, the user probably didn't come from checkout.
+      // If there's no total or items, the user probably didn't come from checkout.
       // Redirect them to the home page.
       router.replace('/');
     }
