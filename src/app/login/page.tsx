@@ -1,6 +1,6 @@
-export const runtime = 'nodejs'; // Pastikan runtime Node.js digunakan
-
 'use client';
+
+export const runtime = 'nodejs'; // Pastikan runtime Node.js digunakan
 
 import React, { Suspense } from 'react';
 import { useForm } from 'react-hook-form';
