@@ -1,144 +1,65 @@
-'use client';
-
-import { useState, useEffect } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
-import { getProducts } from '@/services/product-service';
-import type { Product, PageInfo } from '@/lib/types';
+import Link from 'next/link';
+import Image from 'next/image';
+import { Button } from '@/components/ui/button';
 import { ProductCard } from '@/components/ProductCard';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
-import { usePagination, DOTS } from '@/hooks/use-pagination';
-import { Search } from 'lucide-react';
+import { getProducts } from '@/services/product-service';
+import { ArrowRight } from 'lucide-react';
 
-const PRODUCTS_PER_PAGE = 8;
-
-export default function Home() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  
-  const [products, setProducts] = useState<Product[]>([]);
-  const [pageInfo, setPageInfo] = useState<PageInfo | null>(null);
-
-  const searchTerm = searchParams.get('q') || '';
-  const sortBy = searchParams.get('sortBy') || 'name-asc';
-  const currentPage = Number(searchParams.get('page')) || 1;
-
-  useEffect(() => {
-    const { products, pageInfo } = getProducts({ 
-      searchTerm, 
-      sortBy, 
-      page: currentPage 
-    });
-    setProducts(products);
-    setPageInfo(pageInfo);
-  }, [searchTerm, sortBy, currentPage]);
-
-  const handleSearch = (term: string) => {
-    const params = new URLSearchParams(searchParams);
-    if (term) {
-      params.set('q', term);
-    } else {
-      params.delete('q');
-    }
-    params.set('page', '1');
-    router.push(`?${params.toString()}`);
-  };
-
-  const handleSort = (value: string) => {
-    const params = new URLSearchParams(searchParams);
-    params.set('sortBy', value);
-    params.set('page', '1');
-    router.push(`?${params.toString()}`);
-  };
-
-  const createPageURL = (pageNumber: number | string) => {
-    const params = new URLSearchParams(searchParams);
-    params.set('page', String(pageNumber));
-    return `?${params.toString()}`;
-  };
-
-  const paginationRange = usePagination({
-    currentPage: pageInfo?.currentPage || 1,
-    totalCount: pageInfo?.totalProducts || 0,
-    pageSize: PRODUCTS_PER_PAGE,
-  });
+export default function HomePage() {
+  // Get first 4 products as featured
+  const { products: featuredProducts } = getProducts({ page: 1 });
+  const topFeaturedProducts = featuredProducts.slice(0, 4);
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="text-center mb-8">
-        <h1 className="font-headline text-4xl font-bold">Produk Kami</h1>
-        <p className="text-muted-foreground mt-2">Jelajahi pilihan instrumen dan perlengkapan musik kami.</p>
-      </div>
-
-      <div className="flex flex-col md:flex-row gap-4 mb-8">
-        <div className="relative flex-grow">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-            <Input
-            type="search"
-            placeholder="Cari produk..."
-            className="pl-10 w-full"
-            defaultValue={searchTerm}
-            onChange={(e) => handleSearch(e.target.value)}
-            />
+    <div>
+      {/* Hero Section */}
+      <section className="relative bg-background py-20 md:py-32">
+        <div className="container mx-auto px-4 text-center">
+            <div 
+                className="absolute inset-0 bg-cover bg-center opacity-10"
+                style={{ backgroundImage: "url('https://picsum.photos/1600/900?random=hero')" }}
+                data-ai-hint="musical instruments stage"
+            ></div>
+            <div className="relative z-10">
+                <h1 className="font-headline text-5xl md:text-7xl font-extrabold tracking-tight text-primary">
+                    Simulasi Dunia Web Anda
+                </h1>
+                <p className="mt-6 max-w-2xl mx-auto text-lg md:text-xl text-foreground/80">
+                    Jelajahi platform e-commerce dan pemasaran simulasi kami. Beli produk, buat kampanye, dan analisis data—semua dalam satu tempat.
+                </p>
+                <div className="mt-10 flex flex-wrap justify-center gap-4">
+                    <Button asChild size="lg">
+                        <Link href="/products">
+                            Mulai Belanja <ArrowRight className="ml-2" />
+                        </Link>
+                    </Button>
+                    <Button asChild size="lg" variant="outline">
+                        <Link href="/campaign-assistant">Coba Campaign Assistant</Link>
+                    </Button>
+                </div>
+            </div>
         </div>
-        <Select value={sortBy} onValueChange={handleSort}>
-          <SelectTrigger className="w-full md:w-[200px]">
-            <SelectValue placeholder="Urutkan berdasarkan" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="name-asc">Nama (A-Z)</SelectItem>
-            <SelectItem value="name-desc">Nama (Z-A)</SelectItem>
-            <SelectItem value="price-asc">Harga (Terendah)</SelectItem>
-            <SelectItem value="price-desc">Harga (Tertinggi)</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+      </section>
 
-      {products.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-          {products.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
+      {/* Featured Products Section */}
+      <section className="py-24 bg-card/50">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-12">
+            <h2 className="font-headline text-4xl font-bold">Produk Unggulan</h2>
+            <p className="text-muted-foreground mt-2">Lihat beberapa instrumen dan perlengkapan terlaris kami.</p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            {topFeaturedProducts.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+           <div className="text-center mt-12">
+                <Button asChild variant="secondary">
+                    <Link href="/products">Lihat Semua Produk</Link>
+                </Button>
+            </div>
         </div>
-      ) : (
-        <div className="text-center py-16">
-            <p className="text-muted-foreground">Tidak ada produk yang ditemukan.</p>
-        </div>
-      )}
-
-      {pageInfo && pageInfo.totalPages > 1 && (
-        <Pagination className="mt-12">
-          <PaginationContent>
-            <PaginationItem>
-              <PaginationPrevious 
-                href={createPageURL(currentPage - 1)}
-                aria-disabled={currentPage === 1}
-                className={currentPage === 1 ? "pointer-events-none opacity-50" : undefined}
-              />
-            </PaginationItem>
-            {paginationRange?.map((pageNumber, index) => {
-              if (pageNumber === DOTS) {
-                return <PaginationEllipsis key={`${pageNumber}-${index}`} />;
-              }
-              return (
-                <PaginationItem key={pageNumber}>
-                  <PaginationLink href={createPageURL(pageNumber)} isActive={currentPage === pageNumber}>
-                    {pageNumber}
-                  </PaginationLink>
-                </PaginationItem>
-              );
-            })}
-            <PaginationItem>
-              <PaginationNext 
-                href={createPageURL(currentPage + 1)}
-                aria-disabled={currentPage === pageInfo.totalPages}
-                className={currentPage === pageInfo.totalPages ? "pointer-events-none opacity-50" : undefined}
-                />
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
-      )}
+      </section>
     </div>
   );
 }

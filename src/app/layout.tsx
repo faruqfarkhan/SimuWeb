@@ -5,6 +5,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { CartProvider } from '@/context/CartContext';
 import { UserProvider } from '@/context/UserContext';
 import Header from '@/components/Header';
+import Footer from '@/components/Footer';
 
 export const metadata: Metadata = {
   title: 'SimuWeb',
@@ -29,6 +30,7 @@ export default function RootLayout({
             <div className="relative flex min-h-screen flex-col">
               <Header />
               <main className="flex-1">{children}</main>
+              <Footer />
             </div>
             <Toaster />
           </CartProvider>
