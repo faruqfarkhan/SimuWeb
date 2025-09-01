@@ -24,7 +24,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     // This effect now only handles initialization state, not user loading.
-    // User loading happens on login or page load if a session exists.
     // For this app, we don't have session persistence, so login is explicit.
     setIsLoading(false);
   }, []);
