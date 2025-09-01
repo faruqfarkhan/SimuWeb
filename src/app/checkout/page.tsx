@@ -12,6 +12,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { formatPrice } from '@/lib/utils';
+import { useEffect } from 'react';
 
 const checkoutSchema = z.object({
   name: z.string().min(2, 'Nama harus terdiri dari minimal 2 karakter'),
@@ -33,9 +34,14 @@ export default function CheckoutPage() {
     defaultValues: { name: '', email: '', address: '', city: '', zip: '' },
   });
 
+  useEffect(() => {
+    if (cartItems.length === 0) {
+      router.replace('/cart');
+    }
+  }, [cartItems, router]);
+
   if (cartItems.length === 0) {
-    router.replace('/cart');
-    return null;
+    return null; // Render nothing while redirecting
   }
 
   const onSubmit = (data: CheckoutFormValues) => {
