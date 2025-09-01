@@ -20,6 +20,7 @@ export interface PageInfo {
 }
 
 export interface User {
+  id: number; // Changed from string to number to match DB schema
   email: string;
-  name?: string;
+  name?: string | null; // Allow name to be nullable to match DB schema
 }

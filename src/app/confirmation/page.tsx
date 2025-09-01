@@ -1,7 +1,8 @@
 'use client';
 
+import React, { Suspense } from 'react';
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,19 +10,21 @@ import { CheckCircle2 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { formatPrice } from '@/lib/utils';
 
+// Datalayer is a global object, so we declare it here to avoid TypeScript errors.
 declare global {
   interface Window {
     dataLayer: any[];
   }
 }
 
-export default function ConfirmationPage() {
+function ConfirmationContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [orderId, setOrderId] = useState<string | null>(null);
   const [orderTotal, setOrderTotal] = useState<number | null>(null);
-  const router = useRouter();
 
   useEffect(() => {
-    const totalString = localStorage.getItem('simuweb_order_total');
+    const totalString = searchParams.get('total');
     if (totalString) {
       const total = parseFloat(totalString);
       const newOrderId = `SW-${Math.floor(Math.random() * 100000000)}`;
@@ -29,28 +32,27 @@ export default function ConfirmationPage() {
       setOrderTotal(total);
       setOrderId(newOrderId);
 
-      // Datalayer logic
+      // Datalayer logic for analytics
       window.dataLayer = window.dataLayer || [];
       window.dataLayer.push({
         event: 'purchase',
         ecommerce: {
           purchase: {
             actionField: {
-              id: newOrderId, // Transaction ID. Required for purchases.
-              revenue: total, // Total transaction value (including tax and shipping)
+              id: newOrderId,
+              revenue: total,
             },
-            products: [], // Optional. A list of products purchased.
+            products: [], // In a real app, you'd populate this with cart items.
           },
         },
       });
 
-      // It's good practice to clean up localStorage after use
-      localStorage.removeItem('simuweb_order_total');
     } else {
-      // If there's no total, the user probably didn't come from checkout
+      // If there's no total, the user probably didn't come from checkout.
+      // Redirect them to the home page.
       router.replace('/');
     }
-  }, [router]);
+  }, [router, searchParams]);
 
   if (!orderId || orderTotal === null) {
     return (
@@ -87,4 +89,14 @@ export default function ConfirmationPage() {
       </Card>
     </div>
   );
+}
+
+
+export default function ConfirmationPage() {
+    return (
+        // Wrap in Suspense because ConfirmationContent uses useSearchParams
+        <Suspense fallback={<div>Loading...</div>}>
+            <ConfirmationContent />
+        </Suspense>
+    )
 }

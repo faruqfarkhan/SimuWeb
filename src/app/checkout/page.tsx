@@ -14,6 +14,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { useToast } from '@/hooks/use-toast';
 import { formatPrice } from '@/lib/utils';
 import { useEffect } from 'react';
+import { Skeleton } from '@/components/ui/skeleton';
+
 
 const checkoutSchema = z.object({
   name: z.string().min(2, 'Nama harus terdiri dari minimal 2 karakter'),
@@ -26,8 +28,8 @@ const checkoutSchema = z.object({
 type CheckoutFormValues = z.infer<typeof checkoutSchema>;
 
 export default function CheckoutPage() {
-  const { cartItems, cartTotal, clearCart } = useCart();
-  const { user } = useUser();
+  const { cartItems, cartTotal, clearCart, isLoading: isCartLoading } = useCart();
+  const { user, isLoading: isUserLoading } = useUser();
   const router = useRouter();
   const { toast } = useToast();
 
@@ -35,8 +37,12 @@ export default function CheckoutPage() {
     resolver: zodResolver(checkoutSchema),
     defaultValues: { name: '', email: '', address: '', city: '', zip: '' },
   });
+  
+  const isLoading = isUserLoading || isCartLoading;
 
   useEffect(() => {
+    if (isLoading) return;
+
     if (!user) {
       router.replace('/login?redirect=/checkout');
     } else if (cartItems.length === 0) {
@@ -45,18 +51,14 @@ export default function CheckoutPage() {
         form.setValue('name', user.name || '');
         form.setValue('email', user.email);
     }
-  }, [cartItems, router, user, form]);
-
-  if (!user || cartItems.length === 0) {
-    return null; // Render nothing while redirecting
-  }
+  }, [cartItems.length, router, user, form, isLoading]);
 
   const onSubmit = (data: CheckoutFormValues) => {
     console.log('Checkout data:', data);
     
-    // Store total for confirmation page
-    localStorage.setItem('simuweb_order_total', cartTotal.toFixed(0));
+    // In a real app, you would send this to a payment gateway and create an order in the DB.
     
+    // We clear the cart after successful "order".
     clearCart();
     
     toast({
@@ -64,8 +66,57 @@ export default function CheckoutPage() {
       description: 'Mengarahkan ke halaman konfirmasi...',
     });
     
-    router.push('/confirmation');
+    router.push(`/confirmation?total=${cartTotal}`);
   };
+  
+  if (isLoading) {
+    return (
+        <div className="container mx-auto px-4 py-8 max-w-4xl">
+            <Skeleton className="h-12 w-1/3 mb-8" />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                <Card>
+                    <CardHeader>
+                        <Skeleton className="h-8 w-1/2" />
+                        <Skeleton className="h-4 w-3/4" />
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                        <div className="space-y-2">
+                           <Skeleton className="h-4 w-1/4" />
+                           <Skeleton className="h-10 w-full" />
+                        </div>
+                        <div className="space-y-2">
+                           <Skeleton className="h-4 w-1/4" />
+                           <Skeleton className="h-10 w-full" />
+                        </div>
+                         <div className="space-y-2">
+                           <Skeleton className="h-4 w-1/4" />
+                           <Skeleton className="h-10 w-full" />
+                        </div>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader>
+                        <Skeleton className="h-8 w-1/2" />
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <Skeleton className="h-6 w-full" />
+                        <Skeleton className="h-6 w-full" />
+                        <hr />
+                        <Skeleton className="h-8 w-full" />
+                    </CardContent>
+                    <CardFooter>
+                        <Skeleton className="h-12 w-full" />
+                    </CardFooter>
+                </Card>
+            </div>
+        </div>
+    )
+  }
+
+  // This check is to prevent flash of content before redirect happens
+  if (!user || cartItems.length === 0) {
+    return null;
+  }
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
@@ -100,7 +151,7 @@ export default function CheckoutPage() {
                       <FormItem>
                         <FormLabel>Alamat Email</FormLabel>
                         <FormControl>
-                          <Input placeholder="anda@contoh.com" {...field} />
+                          <Input placeholder="anda@contoh.com" {...field} disabled />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
