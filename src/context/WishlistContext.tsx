@@ -24,30 +24,27 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return user ? `simuweb_wishlist_${user.email}` : 'simuweb_wishlist_guest';
   }, [user]);
 
-  // This effect runs when the user logs in or out.
+  // Effect to load wishlist from localStorage when user changes (login/logout)
   useEffect(() => {
     try {
       const wishlistKey = getWishlistKey();
       const storedWishlist = localStorage.getItem(wishlistKey);
-      if (storedWishlist) {
-        setWishlistItems(JSON.parse(storedWishlist));
-      } else {
-        // If no wishlist is found for the new user, clear the items.
-        setWishlistItems([]);
-      }
+      setWishlistItems(storedWishlist ? JSON.parse(storedWishlist) : []);
     } catch (error) {
       console.error('Failed to parse wishlist from localStorage', error);
       setWishlistItems([]);
     }
   }, [user, getWishlistKey]);
 
-  // This effect runs whenever the wishlistItems state changes.
+  // Effect to save wishlist to localStorage whenever it changes
   useEffect(() => {
     try {
       const wishlistKey = getWishlistKey();
-      // Do not save an empty wishlist if it's the initial state from a fresh load
-      if (wishlistItems.length > 0 || localStorage.getItem(wishlistKey)) {
+      if (wishlistItems.length > 0) {
         localStorage.setItem(wishlistKey, JSON.stringify(wishlistItems));
+      } else {
+        // If the wishlist is empty, remove it from storage to keep it clean
+        localStorage.removeItem(wishlistKey);
       }
     } catch (error) {
       console.error('Failed to save wishlist to localStorage', error);
@@ -59,8 +56,7 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       if (prevItems.some(item => item.id === product.id)) {
         return prevItems; // Already in wishlist
       }
-      const newItems = [...prevItems, product];
-      return newItems;
+      return [...prevItems, product];
     });
     toast({
         title: "Ditambahkan ke Wishlist",
@@ -75,8 +71,7 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       if (itemToRemove) {
         removedItemName = itemToRemove.name;
       }
-      const newItems = prevItems.filter(item => item.id !== productId);
-      return newItems;
+      return prevItems.filter(item => item.id !== productId);
     });
 
     if(removedItemName) {
