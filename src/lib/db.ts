@@ -1,24 +1,31 @@
 
 import { createClient } from '@libsql/client';
 
-const TURSO_DATABASE_URL = process.env.TURSO_DATABASE_URL;
-const TURSO_AUTH_TOKEN = process.env.TURSO_AUTH_TOKEN;
+// PERHATIAN: Masukkan URL dan Token Turso Anda di sini.
+// Ini tidak direkomendasikan untuk produksi, tetapi digunakan untuk debugging.
+const TURSO_DATABASE_URL = "YOUR_TURSO_DATABASE_URL_HERE";
+const TURSO_AUTH_TOKEN = "YOUR_TURSO_AUTH_TOKEN_HERE";
 
-let warningMessage = '';
-if (!TURSO_DATABASE_URL) {
-  warningMessage += 'TURSO_DATABASE_URL is not defined. ';
-}
-if (!TURSO_AUTH_TOKEN) {
-  warningMessage += 'TURSO_AUTH_TOKEN is not defined. ';
-}
-if(warningMessage) {
-    console.warn(warningMessage + 'Database operations will fail.');
+let dbClient;
+let connectionError = '';
+
+try {
+  if (!TURSO_DATABASE_URL || TURSO_DATABASE_URL === "YOUR_TURSO_DATABASE_URL_HERE") {
+    throw new Error("URL Database Turso belum diatur di src/lib/db.ts");
+  }
+  if (!TURSO_AUTH_TOKEN || TURSO_AUTH_TOKEN === "YOUR_TURSO_AUTH_TOKEN_HERE") {
+    throw new Error("Token Otorisasi Turso belum diatur di src/lib/db.ts");
+  }
+
+  dbClient = createClient({
+    url: TURSO_DATABASE_URL,
+    authToken: TURSO_AUTH_TOKEN,
+  });
+
+} catch (e: any) {
+    connectionError = e.message;
+    console.error("Gagal menginisialisasi koneksi database:", connectionError);
+    dbClient = null;
 }
 
-export const db =
-  TURSO_DATABASE_URL && TURSO_AUTH_TOKEN
-    ? createClient({
-        url: TURSO_DATABASE_URL,
-        authToken: TURSO_AUTH_TOKEN,
-      })
-    : null;
+export const db = dbClient;
