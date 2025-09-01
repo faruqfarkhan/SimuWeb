@@ -60,16 +60,21 @@ export default function UrlBuilderPage() {
       return;
     }
 
-    const url = new URL(baseUrl);
-    Object.entries(params).forEach(([key, value]) => {
-      if (value) {
-        url.searchParams.set(key, value);
-      } else {
-        url.searchParams.delete(key);
-      }
-    });
+    try {
+      const url = new URL(baseUrl);
+      Object.entries(params).forEach(([key, value]) => {
+        if (value) {
+          url.searchParams.set(key, value);
+        } else {
+          url.searchParams.delete(key);
+        }
+      });
+      setGeneratedUrl(url.toString());
+    } catch (error) {
+        // Invalid URL during typing, clear the output
+        setGeneratedUrl('');
+    }
 
-    setGeneratedUrl(url.toString());
   }, [watchedValues, form.formState.errors.baseUrl]);
 
   const handleCopy = () => {
