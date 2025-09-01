@@ -5,10 +5,19 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import type { User } from '@/lib/types';
 import { db } from '@/lib/db';
+import { config } from 'dotenv';
+
+config();
+
+interface RegisterData {
+    name: string;
+    email: string;
+}
 
 interface UserContextType {
   user: User | null;
-  login: (email: string) => Promise<void>;
+  login: (email: string) => Promise<User | null>;
+  register: (data: RegisterData) => Promise<User | null>;
   logout: () => void;
   isLoading: boolean;
 }
@@ -23,65 +32,92 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { toast } = useToast();
 
   useEffect(() => {
-    // This effect now only handles initialization state, not user loading.
-    // For this app, we don't have session persistence, so login is explicit.
     setIsLoading(false);
   }, []);
 
-  const login = useCallback(async (email: string) => {
+  const login = useCallback(async (email: string): Promise<User | null> => {
     if (!db) {
         toast({
             variant: "destructive",
             title: "Database Not Configured",
             description: "Cannot log in. Database connection is not set up.",
         });
-        return;
+        return null;
     }
 
     setIsLoading(true);
     try {
-      // Check if user exists
       let userResult = await db.execute({
         sql: 'SELECT id, email, name FROM users WHERE email = ?',
         args: [email],
       });
 
-      let currentUser: User;
-
       if (userResult.rows.length > 0) {
-        // User exists
-        currentUser = userResult.rows[0] as unknown as User;
-      } else {
-        // User does not exist, create them
-        const name = email.split('@')[0]; // Simple name generation
-        const insertResult = await db.execute({
-          sql: 'INSERT INTO users (email, name) VALUES (?, ?) RETURNING id, email, name',
-          args: [email, name],
+        const currentUser = userResult.rows[0] as unknown as User;
+        setUser(currentUser);
+        toast({
+            title: "Login Berhasil",
+            description: `Selamat datang kembali, ${currentUser.name || currentUser.email}!`,
         });
-        if (insertResult.rows.length === 0){
-            throw new Error("Failed to create user account.");
-        }
-        currentUser = insertResult.rows[0] as unknown as User;
+        return currentUser;
+      } else {
+        return null;
       }
-      
-      setUser(currentUser);
-      
-      toast({
-          title: "Login Berhasil",
-          description: `Selamat datang kembali, ${currentUser.name || currentUser.email}!`,
-      });
-      
     } catch (error) {
       console.error("Login failed:", error);
-      toast({
-        variant: "destructive",
-        title: "Login Gagal",
-        description: "Terjadi kesalahan saat mencoba masuk.",
-      });
+      return null;
     } finally {
         setIsLoading(false);
     }
   }, [toast]);
+
+  const register = useCallback(async (data: RegisterData): Promise<User | null> => {
+    if (!db) {
+        toast({
+            variant: "destructive",
+            title: "Database Not Configured",
+            description: "Cannot register. Database connection is not set up.",
+        });
+        return null;
+    }
+
+    setIsLoading(true);
+    try {
+      // Check if user already exists
+      let existingUser = await db.execute({
+        sql: 'SELECT id FROM users WHERE email = ?',
+        args: [data.email],
+      });
+      
+      if (existingUser.rows.length > 0) {
+        return null; // User already exists
+      }
+
+      const insertResult = await db.execute({
+        sql: 'INSERT INTO users (email, name) VALUES (?, ?) RETURNING id, email, name',
+        args: [data.email, data.name],
+      });
+      if (insertResult.rows.length === 0){
+          throw new Error("Failed to create user account.");
+      }
+      const newUser = insertResult.rows[0] as unknown as User;
+      setUser(newUser);
+      
+      toast({
+          title: "Pendaftaran Berhasil!",
+          description: `Selamat datang, ${newUser.name || newUser.email}!`,
+      });
+
+      return newUser;
+      
+    } catch (error) {
+      console.error("Registration failed:", error);
+      return null;
+    } finally {
+        setIsLoading(false);
+    }
+  }, [toast]);
+
 
   const logout = useCallback(() => {
     setUser(null);
@@ -98,9 +134,10 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const value = useMemo(() => ({
     user,
     login,
+    register,
     logout,
     isLoading,
-  }), [user, login, logout, isLoading]);
+  }), [user, login, register, logout, isLoading]);
 
   return (
     <UserContext.Provider value={value}>

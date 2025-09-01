@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ShoppingCart, LayoutGrid, Link2, Bot, LogIn, LogOut, Home, Phone, Heart } from 'lucide-react';
+import { ShoppingCart, LayoutGrid, Link2, Bot, LogIn, LogOut, Home, Phone, Heart, UserPlus } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
 import { useUser } from '@/context/UserContext';
@@ -131,12 +131,20 @@ const Header = () => {
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <Button asChild size="sm">
-              <Link href="/login">
-                <LogIn className="mr-2 h-4 w-4" />
-                Login
-              </Link>
-            </Button>
+            <div className='flex items-center gap-2'>
+                <Button asChild size="sm" variant="outline">
+                    <Link href="/login">
+                        <LogIn className="mr-2 h-4 w-4" />
+                        Login
+                    </Link>
+                </Button>
+                 <Button asChild size="sm">
+                    <Link href="/register">
+                        <UserPlus className="mr-2 h-4 w-4" />
+                        Daftar
+                    </Link>
+                </Button>
+            </div>
           )}
         </div>
       </div>
