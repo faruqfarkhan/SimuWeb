@@ -23,24 +23,24 @@ export async function seedProducts() {
   }
   
   try {
-    const { rows } = await db.execute("SELECT COUNT(*) as count FROM products");
-    
-    // Turso returns count differently based on context, so handle both potential structures.
-    const count = rows.length > 0 ? (rows[0] as any).count ?? (rows[0][0] as any) : 0;
-
-    if (count > 0) {
-      // console.log("Products table already seeded.");
-      return;
-    }
-
-    console.log("Seeding products table...");
+    // This is a more robust way to check for existence before inserting.
+    // It will not fail if the table is empty and is generally safer.
+    console.log("Seeding products table if necessary...");
     const statements = allProducts.map(p => ({
-      sql: 'INSERT INTO products (id, name, price, description, longDescription, image, dataAiHint) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      sql: 'INSERT INTO products (id, name, price, description, longDescription, image, dataAiHint) VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT(id) DO NOTHING',
       args: [p.id, p.name, p.price, p.description, p.longDescription, p.image, p.dataAiHint]
     }));
 
-    await db.batch(statements, 'write');
-    console.log("Products table seeded successfully.");
+    const results = await db.batch(statements, 'write');
+    
+    // Check if any rows were affected to give a meaningful log.
+    const rowsAffected = results.reduce((acc, result) => acc + (result.rowsAffected || 0), 0);
+    if (rowsAffected > 0) {
+      console.log(`Successfully seeded ${rowsAffected} new products.`);
+    } else {
+      console.log("Products table is already up to date.");
+    }
+
   } catch (error) {
     console.error("Error seeding products:", error);
     // If the table doesn't exist, this will fail. We need to handle schema creation first.
@@ -49,7 +49,7 @@ export async function seedProducts() {
 }
 
 // Call seed on module load. This might run multiple times during development
-// due to hot-reloading, but the check inside prevents re-seeding.
+// due to hot-reloading, but the ON CONFLICT clause prevents duplicates.
 seedProducts();
 
 
