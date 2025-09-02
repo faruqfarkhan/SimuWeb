@@ -15,7 +15,7 @@ interface WishlistContextType {
   removeFromWishlist: (productId: number) => void;
   isInWishlist: (productId: number) => boolean;
   wishlistCount: number;
-  isLoading: boolean; // Tetap ada untuk skeleton UI
+  isLoading: boolean;
 }
 
 const WishlistContext = createContext<WishlistContextType | undefined>(undefined);
@@ -35,7 +35,7 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 JOIN products p ON wi.product_id = p.id
                 WHERE wi.user_id = ?
             `,
-            args: [userId],
+            args: [String(userId)],
         });
         return result.rows as Product[];
     } catch (error) {
@@ -46,7 +46,6 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, [toast]);
   
   const migrateGuestWishlistToDb = useCallback(async (userId: number) => {
-    // Migrasi hanya terjadi jika DB siap
     if (!db) return;
     try {
       const guestWishlistJson = localStorage.getItem(GUEST_WISHLIST_KEY);
@@ -55,7 +54,6 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const guestWishlist: Product[] = JSON.parse(guestWishlistJson);
       if (guestWishlist.length === 0) return;
 
-      // Use INSERT ... ON CONFLICT DO NOTHING to avoid duplicates.
       const statements = guestWishlist.map(item => ({
         sql: 'INSERT INTO wishlist_items (user_id, product_id) VALUES (?, ?) ON CONFLICT DO NOTHING',
         args: [userId, item.id],
@@ -70,12 +68,11 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   useEffect(() => {
     if (isUserLoading) {
-      // Jika status user masih loading, jangan lakukan apa-apa.
       return;
     }
 
     const loadWishlist = async () => {
-        if (user) {
+        if (user && db) {
             await migrateGuestWishlistToDb(user.id);
             const dbWishlist = await fetchDbWishlist(user.id);
             setWishlistItems(dbWishlist);
@@ -90,13 +87,11 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
 
   const addToWishlist = useCallback(async (product: Product) => {
-    // Prevent adding duplicates on the client-side first
     const isAlreadyInWishlist = wishlistItems.some(item => item.id === product.id);
     if (isAlreadyInWishlist) return;
 
     if (user && db) {
         try {
-            // The DB also has a constraint to prevent duplicates
             await db.execute({
                 sql: 'INSERT INTO wishlist_items (user_id, product_id) VALUES (?, ?) ON CONFLICT DO NOTHING',
                 args: [user.id, product.id],
@@ -108,7 +103,6 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             return;
         }
     } else {
-      // Guest user: update localStorage
       setWishlistItems(prevItems => {
         const newItems = [...prevItems, product];
         localStorage.setItem(GUEST_WISHLIST_KEY, JSON.stringify(newItems));
@@ -136,7 +130,6 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             return;
         }
     } else {
-        // Guest user: update localStorage
         setWishlistItems(prevItems => {
             const newItems = prevItems.filter(item => item.id !== productId);
             localStorage.setItem(GUEST_WISHLIST_KEY, JSON.stringify(newItems));
@@ -162,7 +155,7 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     removeFromWishlist,
     isInWishlist,
     wishlistCount,
-    isLoading: isUserLoading // isLoading sekarang mencerminkan status user
+    isLoading: isUserLoading
   }), [wishlistItems, addToWishlist, removeFromWishlist, isInWishlist, wishlistCount, isUserLoading]);
 
   return (
