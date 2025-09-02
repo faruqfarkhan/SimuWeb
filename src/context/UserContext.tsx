@@ -23,6 +23,14 @@ interface UserContextType {
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
+// Datalayer is a global object, so we declare it here to avoid TypeScript errors.
+declare global {
+  interface Window {
+    dataLayer: any[];
+  }
+}
+
+
 export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -67,6 +75,14 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const currentUser = userResult.rows[0] as unknown as User;
         setUser(currentUser);
         localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(currentUser)); // Save to localStorage
+
+        // Push user_id to dataLayer on successful login
+        window.dataLayer = window.dataLayer || [];
+        window.dataLayer.push({
+            event: 'login',
+            user_id: currentUser.id
+        });
+
         toast({
             title: "Login Berhasil",
             description: `Selamat datang kembali, ${currentUser.name || currentUser.email}!`,
