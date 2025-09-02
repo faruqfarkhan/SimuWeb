@@ -37,25 +37,29 @@ function ConfirmationContent() {
       setOrderTotal(total);
       setOrderId(newOrderId);
 
-      // Datalayer logic for analytics
-      window.dataLayer = window.dataLayer || [];
-      
-      const purchaseProducts = lastOrderItems.map(item => ({
-        item_id: item.product.id.toString(),
-        item_name: item.product.name,
-        price: item.product.price,
-        quantity: item.quantity,
-      }));
+      // --- Perbaikan DataLayer ---
+      // Menunda push untuk memastikan GTM sudah sepenuhnya dimuat.
+      setTimeout(() => {
+        window.dataLayer = window.dataLayer || [];
+        
+        const purchaseProducts = lastOrderItems.map(item => ({
+          item_id: item.product.id.toString(),
+          item_name: item.product.name,
+          price: item.product.price,
+          quantity: item.quantity,
+        }));
 
-      window.dataLayer.push({
-        event: 'purchase',
-        ecommerce: {
-          transaction_id: newOrderId,
-          value: total,
-          currency: 'IDR',
-          items: purchaseProducts,
-        },
-      });
+        window.dataLayer.push({
+          event: 'purchase',
+          ecommerce: {
+            transaction_id: newOrderId,
+            value: total,
+            currency: 'IDR',
+            items: purchaseProducts,
+          },
+        });
+      }, 500); // Penundaan 500ms sebagai fallback yang aman.
+
 
       // Clean up sessionStorage after use
       sessionStorage.removeItem('simuweb_last_order_items');
