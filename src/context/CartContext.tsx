@@ -17,7 +17,7 @@ interface CartContextType {
   clearCart: () => void;
   cartCount: number;
   cartTotal: number;
-  isLoading: boolean; // Tetap ada untuk skeleton UI
+  isLoading: boolean;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -38,7 +38,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
           JOIN products p ON ci.product_id = p.id
           WHERE ci.user_id = ?
         `,
-        args: [userId],
+        args: [String(userId)],
       });
       
       return result.rows.map((row: any) => ({
@@ -85,13 +85,11 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     if (isUserLoading) {
-      // Jika status user masih loading, jangan lakukan apa-apa.
-      // Ini mencegah pengambilan data yang prematur.
       return;
     }
 
     const loadCart = async () => {
-      if (user) {
+      if (user && db) {
         // User is logged in
         await migrateGuestCartToDb(user.id);
         const dbCart = await fetchDbCart(user.id);
@@ -238,7 +236,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     clearCart,
     cartCount,
     cartTotal,
-    isLoading: isUserLoading, // isLoading sekarang mencerminkan status user
+    isLoading: isUserLoading,
   }), [cartItems, addToCart, removeFromCart, updateQuantity, clearCart, cartCount, cartTotal, isUserLoading]);
 
   return (
