@@ -13,8 +13,9 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { formatPrice } from '@/lib/utils';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { createOrder } from '@/services/order-service';
 
 // Datalayer is a global object, so we declare it here to avoid TypeScript errors.
 declare global {
@@ -38,6 +39,7 @@ export default function CheckoutPage() {
   const { user, isLoading: isUserLoading } = useUser();
   const router = useRouter();
   const { toast } = useToast();
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const form = useForm<CheckoutFormValues>({
     resolver: zodResolver(checkoutSchema),
@@ -47,25 +49,21 @@ export default function CheckoutPage() {
   const isLoading = isUserLoading;
 
   useEffect(() => {
-    if (isLoading) return; // Wait until loading states are resolved
+    if (isLoading) return;
 
-    // If user is not logged in after loading, redirect to login
     if (!user) {
       router.replace('/login?redirect=/checkout');
-      return; // Stop further execution in this render
+      return;
     }
     
-    // If cart is empty after loading, redirect to cart page
     if (cartItems.length === 0) {
       router.replace('/cart');
-      return; // Stop further execution
+      return;
     }
     
-    // If user is logged in and cart is not empty, populate the form
     form.setValue('name', user.name || '');
     form.setValue('email', user.email);
 
-    // Fire the begin_checkout event
     const checkoutProducts = cartItems.map(item => ({
         item_id: item.product.id.toString(),
         item_name: item.product.name,
@@ -74,7 +72,7 @@ export default function CheckoutPage() {
     }));
     
     window.dataLayer = window.dataLayer || [];
-    window.dataLayer.push({ ecommerce: null }); // Clear previous ecommerce object
+    window.dataLayer.push({ ecommerce: null });
     window.dataLayer.push({
       event: 'begin_checkout',
       ecommerce: {
@@ -84,26 +82,38 @@ export default function CheckoutPage() {
       },
     });
 
-
   }, [cartItems, cartTotal, router, user, form, isLoading]);
 
-  const onSubmit = (data: CheckoutFormValues) => {
-    console.log('Checkout data:', data);
-    
-    // In a real app, you would send this to a payment gateway and create an order in the DB.
+  const onSubmit = async (data: CheckoutFormValues) => {
+    if (!user) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Anda harus login untuk checkout.' });
+        return;
+    }
+    setIsProcessing(true);
 
-    // Store cart data for confirmation page analytics
-    sessionStorage.setItem('simuweb_last_order_items', JSON.stringify(cartItems));
-    
-    // We clear the cart after successful "order".
-    clearCart();
-    
-    toast({
-      title: 'Pembelian Berhasil!',
-      description: 'Mengarahkan ke halaman konfirmasi...',
-    });
-    
-    router.push(`/confirmation?total=${cartTotal}`);
+    const transactionId = await createOrder(user, cartItems, cartTotal, data);
+
+    if (transactionId) {
+        // Store cart data for confirmation page analytics
+        sessionStorage.setItem('simuweb_last_order_items', JSON.stringify(cartItems));
+        sessionStorage.setItem('simuweb_last_transaction_id', transactionId);
+
+        clearCart();
+        
+        toast({
+            title: 'Pembelian Berhasil!',
+            description: 'Mengarahkan ke halaman konfirmasi...',
+        });
+        
+        router.push(`/confirmation?total=${cartTotal}`);
+    } else {
+        toast({
+            variant: 'destructive',
+            title: 'Gagal Memproses Pesanan',
+            description: 'Terjadi kesalahan saat menyimpan pesanan Anda. Silakan coba lagi.',
+        });
+    }
+    setIsProcessing(false);
   };
   
   if (isLoading) {
@@ -259,8 +269,8 @@ export default function CheckoutPage() {
               </div>
             </CardContent>
             <CardFooter>
-              <Button type="submit" form="checkout-form" size="lg" className="w-full">
-                Beli
+              <Button type="submit" form="checkout-form" size="lg" className="w-full" disabled={isProcessing}>
+                {isProcessing ? 'Memproses...' : 'Beli'}
               </Button>
             </CardFooter>
           </Card>
