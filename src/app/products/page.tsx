@@ -15,6 +15,13 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 const PRODUCTS_PER_PAGE = 8;
 
+// Datalayer is a global object, so we declare it here to avoid TypeScript errors.
+declare global {
+  interface Window {
+    dataLayer: any[];
+  }
+}
+
 function ProductsComponent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -34,6 +41,18 @@ function ProductsComponent() {
     });
     setProducts(products);
     setPageInfo(pageInfo);
+
+    // Push search event to dataLayer if a search term exists
+    if (searchTerm) {
+      window.dataLayer = window.dataLayer || [];
+      window.dataLayer.push({
+        event: 'search',
+        ecommerce: {
+          search_term: searchTerm,
+        },
+      });
+    }
+
   }, [searchTerm, sortBy, currentPage]);
 
   const handleSearch = (term: string) => {
