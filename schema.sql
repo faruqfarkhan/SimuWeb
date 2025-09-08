@@ -1,5 +1,8 @@
--- Skema untuk tabel Produk
--- Ini disertakan untuk kelengkapan, asumsikan ini sudah ada.
+-- Skema ini mendefinisikan tabel untuk aplikasi e-commerce simulasi.
+-- Dibuat untuk database yang kompatibel dengan SQLite seperti Turso.
+
+-- Tabel untuk menyimpan informasi produk.
+-- Data untuk tabel ini di-seed dari `src/lib/products.ts` melalui `src/services/product-service.ts`.
 CREATE TABLE IF NOT EXISTS products (
     id INTEGER PRIMARY KEY,
     name TEXT NOT NULL,
@@ -10,43 +13,39 @@ CREATE TABLE IF NOT EXISTS products (
     dataAiHint TEXT
 );
 
--- Skema untuk tabel Pengguna
--- Ini disertakan untuk kelengkapan, asumsikan ini sudah ada.
+-- Tabel untuk menyimpan informasi pengguna.
 CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     email TEXT NOT NULL UNIQUE,
-    name TEXT
+    name TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Skema untuk tabel Item Keranjang
--- Ini disertakan untuk kelengkapan, asumsikan ini sudah ada.
+-- Tabel untuk menyimpan item di keranjang belanja pengguna.
 CREATE TABLE IF NOT EXISTS cart_items (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,
     product_id INTEGER NOT NULL,
-    quantity INTEGER NOT NULL,
-    PRIMARY KEY (user_id, product_id),
+    quantity INTEGER NOT NULL DEFAULT 1,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+    UNIQUE(user_id, product_id) -- Setiap produk hanya boleh muncul sekali per pengguna di keranjang.
 );
 
--- Skema untuk tabel Item Wishlist
--- Ini disertakan untuk kelengkapan, asumsikan ini sudah ada.
+-- Tabel untuk menyimpan item di daftar keinginan (wishlist) pengguna.
 CREATE TABLE IF NOT EXISTS wishlist_items (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,
     product_id INTEGER NOT NULL,
-    PRIMARY KEY (user_id, product_id),
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+    UNIQUE(user_id, product_id) -- Setiap produk hanya boleh muncul sekali per pengguna di wishlist.
 );
 
--- =================================================================
--- SKEMA BARU UNTUK ORDERS
--- =================================================================
-
--- Tabel Orders: Menyimpan informasi ringkasan untuk setiap pesanan.
+-- Tabel untuk menyimpan informasi pesanan.
 CREATE TABLE IF NOT EXISTS orders (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    transaction_id TEXT NOT NULL UNIQUE, -- ID unik yang dapat dilihat pelanggan
+    transaction_id TEXT NOT NULL UNIQUE, -- ID unik yang dibuat aplikasi untuk pelacakan
     user_id INTEGER NOT NULL,
     total_amount REAL NOT NULL,
     shipping_name TEXT NOT NULL,
@@ -54,10 +53,10 @@ CREATE TABLE IF NOT EXISTS orders (
     shipping_city TEXT NOT NULL,
     shipping_zip TEXT NOT NULL,
     order_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id)
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL -- Simpan data pesanan meskipun pengguna dihapus
 );
 
--- Tabel Order Items: Menyimpan setiap item baris dalam suatu pesanan.
+-- Tabel untuk menyimpan item individual dalam setiap pesanan.
 CREATE TABLE IF NOT EXISTS order_items (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     order_id INTEGER NOT NULL,
@@ -65,5 +64,5 @@ CREATE TABLE IF NOT EXISTS order_items (
     quantity INTEGER NOT NULL,
     price_per_unit REAL NOT NULL, -- Harga pada saat pembelian
     FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
-    FOREIGN KEY (product_id) REFERENCES products(id)
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE SET NULL -- Simpan item meskipun produk dihapus dari toko
 );
