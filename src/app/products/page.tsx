@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, Suspense, FormEvent } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { getProducts } from '@/services/product-service';
 import type { Product, PageInfo } from '@/lib/types';
@@ -12,6 +12,7 @@ import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, Pagi
 import { usePagination, DOTS } from '@/hooks/use-pagination';
 import { Search } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
 
 const PRODUCTS_PER_PAGE = 8;
 
@@ -28,6 +29,9 @@ function ProductsComponent() {
   
   const [products, setProducts] = useState<Product[]>([]);
   const [pageInfo, setPageInfo] = useState<PageInfo | null>(null);
+  
+  // State lokal untuk input pencarian
+  const [localSearchTerm, setLocalSearchTerm] = useState(searchParams.get('q') || '');
 
   const searchTerm = searchParams.get('q') || '';
   const sortBy = searchParams.get('sortBy') || 'name-asc';
@@ -55,10 +59,11 @@ function ProductsComponent() {
 
   }, [searchTerm, sortBy, currentPage]);
 
-  const handleSearch = (term: string) => {
+  const handleSearchSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
     const params = new URLSearchParams(searchParams.toString());
-    if (term) {
-      params.set('q', term);
+    if (localSearchTerm) {
+      params.set('q', localSearchTerm);
     } else {
       params.delete('q');
     }
@@ -88,16 +93,19 @@ function ProductsComponent() {
   return (
     <>
       <div className="flex flex-col md:flex-row gap-4 mb-8">
-        <div className="relative flex-grow">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-            <Input
-            type="search"
-            placeholder="Cari produk..."
-            className="pl-10 w-full"
-            defaultValue={searchTerm}
-            onChange={(e) => handleSearch(e.target.value)}
-            />
-        </div>
+        <form onSubmit={handleSearchSubmit} className="relative flex-grow flex gap-2">
+            <div className="relative flex-grow">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <Input
+                type="search"
+                placeholder="Cari produk..."
+                className="pl-10 w-full"
+                value={localSearchTerm}
+                onChange={(e) => setLocalSearchTerm(e.target.value)}
+                />
+            </div>
+            <Button type="submit">Cari</Button>
+        </form>
         <Select value={sortBy} onValueChange={handleSort}>
           <SelectTrigger className="w-full md:w-[200px]">
             <SelectValue placeholder="Urutkan berdasarkan" />
