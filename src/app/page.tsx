@@ -25,7 +25,7 @@ export default function HomePage() {
                     Simulasi Dunia Web Anda
                 </h1>
                 <p className="mt-6 max-w-2xl mx-auto text-lg md:text-xl text-foreground/80">
-                    Jelajahi platform e-commerce dan pemasaran simulasi kami. Beli produk, buat kampanye, dan analisis data—semua dalam satu tempat.
+                    Jelajahi platform e-commerce dan pemasaran simulasi kami. Beli produk, buat kampanye, dan analisis data. semua dalam satu tempat.
                 </p>
                 <div className="mt-10 flex flex-wrap justify-center gap-4">
                     <Button asChild size="lg">
