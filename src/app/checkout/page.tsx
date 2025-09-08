@@ -16,6 +16,12 @@ import { formatPrice } from '@/lib/utils';
 import { useEffect } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 
+// Datalayer is a global object, so we declare it here to avoid TypeScript errors.
+declare global {
+  interface Window {
+    dataLayer: any[];
+  }
+}
 
 const checkoutSchema = z.object({
   name: z.string().min(2, 'Nama harus terdiri dari minimal 2 karakter'),
@@ -28,7 +34,7 @@ const checkoutSchema = z.object({
 type CheckoutFormValues = z.infer<typeof checkoutSchema>;
 
 export default function CheckoutPage() {
-  const { cartItems, cartTotal, clearCart, isLoading: isCartLoading } = useCart();
+  const { cartItems, cartTotal, clearCart } = useCart();
   const { user, isLoading: isUserLoading } = useUser();
   const router = useRouter();
   const { toast } = useToast();
@@ -38,7 +44,7 @@ export default function CheckoutPage() {
     defaultValues: { name: '', email: '', address: '', city: '', zip: '' },
   });
   
-  const isLoading = isUserLoading || isCartLoading;
+  const isLoading = isUserLoading;
 
   useEffect(() => {
     if (isLoading) return; // Wait until loading states are resolved
@@ -59,7 +65,26 @@ export default function CheckoutPage() {
     form.setValue('name', user.name || '');
     form.setValue('email', user.email);
 
-  }, [cartItems.length, router, user, form, isLoading]);
+    // Fire the begin_checkout event
+    const checkoutProducts = cartItems.map(item => ({
+        item_id: item.product.id.toString(),
+        item_name: item.product.name,
+        price: item.product.price,
+        quantity: item.quantity,
+    }));
+    
+    window.dataLayer = window.dataLayer || [];
+    window.dataLayer.push({
+      event: 'begin_checkout',
+      ecommerce: {
+        currency: 'IDR',
+        value: cartTotal,
+        items: checkoutProducts,
+      },
+    });
+
+
+  }, [cartItems, cartTotal, router, user, form, isLoading]);
 
   const onSubmit = (data: CheckoutFormValues) => {
     console.log('Checkout data:', data);

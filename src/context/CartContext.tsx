@@ -9,6 +9,13 @@ import { products as allProducts } from '@/lib/products';
 
 const GUEST_CART_KEY = 'simuweb_cart_guest';
 
+// Datalayer is a global object, so we declare it here to avoid TypeScript errors.
+declare global {
+  interface Window {
+    dataLayer: any[];
+  }
+}
+
 interface CartContextType {
   cartItems: CartItem[];
   addToCart: (product: Product, quantity?: number) => void;
@@ -17,7 +24,6 @@ interface CartContextType {
   clearCart: () => void;
   cartCount: number;
   cartTotal: number;
-  isLoading: boolean;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -89,11 +95,13 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     const loadCart = async () => {
-      if (user && db) {
+      if (user) {
         // User is logged in
-        await migrateGuestCartToDb(user.id);
-        const dbCart = await fetchDbCart(user.id);
-        setCartItems(dbCart);
+        if (db) {
+          await migrateGuestCartToDb(user.id);
+          const dbCart = await fetchDbCart(user.id);
+          setCartItems(dbCart);
+        }
       } else {
         // User is a guest
         const guestCartJson = localStorage.getItem(GUEST_CART_KEY);
@@ -105,6 +113,24 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [user, isUserLoading, fetchDbCart, migrateGuestCartToDb]);
 
   const addToCart = useCallback(async (product: Product, quantity = 1) => {
+    // Push to dataLayer for analytics
+    window.dataLayer = window.dataLayer || [];
+    window.dataLayer.push({
+      event: 'add_to_cart',
+      ecommerce: {
+        currency: 'IDR',
+        value: product.price * quantity,
+        items: [
+          {
+            item_id: product.id.toString(),
+            item_name: product.name,
+            price: product.price,
+            quantity: quantity,
+          },
+        ],
+      },
+    });
+
     if (!user) {
       // Guest user: update localStorage
       setCartItems(prevItems => {
@@ -236,8 +262,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     clearCart,
     cartCount,
     cartTotal,
-    isLoading: isUserLoading,
-  }), [cartItems, addToCart, removeFromCart, updateQuantity, clearCart, cartCount, cartTotal, isUserLoading]);
+  }), [cartItems, addToCart, removeFromCart, updateQuantity, clearCart, cartCount, cartTotal]);
 
   return (
     <CartContext.Provider value={value}>
