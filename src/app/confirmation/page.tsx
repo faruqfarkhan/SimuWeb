@@ -41,6 +41,7 @@ function ConfirmationContent() {
       // Menunda push untuk memastikan GTM sudah sepenuhnya dimuat.
       setTimeout(() => {
         window.dataLayer = window.dataLayer || [];
+        window.dataLayer.push({ ecommerce: null }); // Clear previous ecommerce object
         
         const purchaseProducts = lastOrderItems.map(item => ({
           item_id: item.product.id.toString(),

@@ -74,6 +74,7 @@ export default function CheckoutPage() {
     }));
     
     window.dataLayer = window.dataLayer || [];
+    window.dataLayer.push({ ecommerce: null }); // Clear previous ecommerce object
     window.dataLayer.push({
       event: 'begin_checkout',
       ecommerce: {
